@@ -121,6 +121,10 @@ def main():
     train_dir = os.path.join(args.data_root, 'trainset')
     test_dir = os.path.join(args.data_root, 'testset')
     
+    vocab = get_vocab(train_dir, test_dir)
+    logger.info(f"Vocab size: {len(vocab)}")
+    logger.info(f"Vocab: {vocab}")
+
     # Save vocab
     with open(os.path.join(args.save_dir, "vocab.txt"), "w") as f:
         f.write("\n".join(vocab))
