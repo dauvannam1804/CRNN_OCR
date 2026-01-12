@@ -23,9 +23,25 @@ def main():
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
-    train_dir = os.path.join(args.data_root, 'trainset')
-    test_dir = os.path.join(args.data_root, 'testset')
-    vocab = get_vocab(train_dir, test_dir)
+    
+    # Try loading vocab from the same directory as the model
+    model_dir = os.path.dirname(args.model_path)
+    vocab_path = os.path.join(model_dir, "vocab.txt")
+    
+    if os.path.exists(vocab_path):
+        print(f"Loading vocab from {vocab_path}")
+        with open(vocab_path, "r") as f:
+            vocab = f.read().splitlines()
+    else:
+        print(f"vocab.txt not found in {model_dir}, scanning data directory...")
+        train_dir = os.path.join(args.data_root, 'trainset')
+        test_dir = os.path.join(args.data_root, 'testset')
+        vocab = get_vocab(train_dir, test_dir)
+    
+    if len(vocab) == 0:
+        raise ValueError("Vocabulary is empty! Make sure 'vocab.txt' exists or data directories are correct.")
+        
+    print(f"Vocab size: {len(vocab)}")
     idx2char = {idx + 1: char for idx, char in enumerate(vocab)}
     n_class = len(vocab) + 1
 
