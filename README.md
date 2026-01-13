@@ -65,7 +65,29 @@ python3 src/train_custom.py \
 *   **Logs**: Saved to `checkpoints/training_log_custom.csv`.
 *   This script uses `src/ctc_loss.py` which implements the Forward Algorithm from scratch using PyTorch operations.
 
-## 4. Inference
+*   This script uses `src/ctc_loss.py` which implements the Forward Algorithm from scratch using PyTorch operations.
+
+## 4. Monitoring & Visualization
+
+The training process automatically generates logs and plots in the `checkpoints/` directory.
+
+### CSV Logs
+The `training_log.csv` (or `training_log_custom.csv`) contains metrics for each epoch:
+*   `epoch`: Current training epoch.
+*   `train_loss`: Average CTC loss on the training set.
+*   `val_loss`: Average CTC loss on the validation set.
+*   `full_acc`: Full sequence match accuracy (0.0 - 1.0).
+*   `char_acc`: Character-level accuracy (0.0 - 1.0).
+
+### Plots
+A `training_history.png` is generated at the end of training, visualizing:
+1.  **Training & Validation Loss**: To check for convergence and overfitting.
+2.  **Full Sequence Accuracy**: Percentage of images where the entire string was predicted correctly.
+3.  **Character Accuracy**: Percentage of individual characters predicted correctly.
+
+You can also manually regenerate plots from a CSV file using `src/utils.py` (if you import it).
+
+## 5. Inference
 
 You can run inference on a single image or a whole directory.
 
