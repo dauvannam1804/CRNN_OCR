@@ -261,6 +261,11 @@ class CTCLossFunction(autograd.Function):
         # Re-use the "Extension" logic.
         
         device = log_probs.device
+        
+        # Ensure lengths are on the same device
+        input_lengths = input_lengths.to(device)
+        target_lengths = target_lengths.to(device)
+
         T_max, B, C = log_probs.shape
         L_max = target_lengths.max().item()
         S_max = 2 * L_max + 1
