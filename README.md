@@ -47,6 +47,23 @@ python3 src/train.py \
 
 *   **Logs**: Training logs are printed to console and saved to `checkpoints/train.log`.
 *   **Checkpoints**: The best model (based on validation accuracy) is saved as `best_model.pth`.
+*   **Plots**: Training history plots (loss and accuracy) are saved as `checkpoints/training_history.png`.
+
+### 3b. Training with Custom CTC Loss
+
+To train using the custom Python implementation of CTC Loss (for educational purposes or debugging):
+
+```bash
+python3 src/train_custom.py \
+    --data_root ./data \
+    --batch_size 64 \
+    --epochs 50 \
+    --lr 0.001 \
+    --save_dir ./checkpoints
+```
+
+*   **Logs**: Saved to `checkpoints/training_log_custom.csv`.
+*   This script uses `src/ctc_loss.py` which implements the Forward Algorithm from scratch using PyTorch operations.
 
 ## 4. Inference
 
