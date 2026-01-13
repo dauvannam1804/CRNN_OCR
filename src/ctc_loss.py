@@ -425,7 +425,7 @@ class CTCLossFromScratch(nn.Module):
             # Or just mean of losses?
             # Existing notebook logic said: Python Loss / TargetLen Matches PyTorch
             # So "raw" NLL should be divided by target_lengths.
-             safe_lengths = target_lengths.clone().float()
+             safe_lengths = target_lengths.clone().float().to(losses.device)
              safe_lengths[safe_lengths == 0] = 1.0
              losses = losses / safe_lengths
              return losses.mean()
