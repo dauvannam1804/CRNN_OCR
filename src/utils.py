@@ -1,5 +1,7 @@
 
 import torch
+import matplotlib.pyplot as plt
+import pandas as pd
 
 def decode_greedy(logits, idx2char):
     """
@@ -78,3 +80,44 @@ def calculate_accuracy(predictions, targets):
         char_acc = matches / target_chars
 
     return full_acc, char_acc
+
+def plot_training_history(csv_path, save_path='training_history.png'):
+    try:
+        df = pd.read_csv(csv_path)
+    except Exception as e:
+        print(f"Error reading CSV: {e}")
+        return
+
+    # Expected columns: epoch, train_loss, val_loss, full_acc, char_acc
+    
+    plt.figure(figsize=(18, 5))
+    
+    # 1. Train & Val Loss
+    plt.subplot(1, 3, 1)
+    plt.plot(df['epoch'], df['train_loss'], label='Train Loss')
+    plt.plot(df['epoch'], df['val_loss'], label='Val Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Training & Validation Loss')
+    plt.legend()
+    
+    # 2. Full Match Accuracy
+    plt.subplot(1, 3, 2)
+    plt.plot(df['epoch'], df['full_acc'], label='Full Match Acc', color='green')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.title('Full Sequence Accuracy')
+    plt.legend()
+    
+    # 3. Char Accuracy
+    plt.subplot(1, 3, 3)
+    plt.plot(df['epoch'], df['char_acc'], label='Char Acc', color='orange')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.title('Character Accuracy')
+    plt.legend()
+    
+    plt.tight_layout()
+    plt.savefig(save_path)
+    print(f"Training history plot saved to {save_path}")
+

@@ -12,6 +12,7 @@ import logging
 from dataset import OCRDataset, get_vocab
 from model import CRNN
 from utils import decode_greedy, calculate_accuracy, plot_training_history
+from ctc_loss import CTCLossFromScratch
 
 def set_seed(seed):
     random.seed(seed)
@@ -142,14 +143,15 @@ def main():
     n_class = len(vocab) + 1 # +1 for blank
     model = CRNN(args.imgH, 1, n_class, args.hidden_size).to(device)
     
-    # Use PyTorch CTC Loss
-    criterion = nn.CTCLoss(blank=0, zero_infinity=True)
+    # Use custom CTC Loss
+    # criterion = nn.CTCLoss(blank=0, zero_infinity=True) # Old
+    criterion = CTCLossFromScratch(blank=0, reduction='mean', zero_infinity=True) # New
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     
     best_acc = 0.0
     
     # Initialize CSV Log
-    csv_path = os.path.join(args.save_dir, "training_log.csv")
+    csv_path = os.path.join(args.save_dir, "training_log_custom.csv")
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["epoch", "train_loss", "val_loss", "full_acc", "char_acc"])

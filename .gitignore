@@ -1,3 +1,4 @@
 data/testset
 data/trainset
 *__pycache__
+checkpoints
