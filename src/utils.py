@@ -1,7 +1,11 @@
 
 import torch
 import matplotlib.pyplot as plt
+import torch
+import matplotlib.pyplot as plt
 import pandas as pd
+import math
+from collections import defaultdict
 
 def decode_greedy(logits, idx2char):
     """
@@ -24,6 +28,77 @@ def decode_greedy(logits, idx2char):
             last_char = char_idx
         decoded_batch.append("".join(decoded_str))
     
+    return decoded_batch
+
+def decode_beam_search(logits, idx2char, beam_width=10):
+    """
+    logits: [T, B, C] (Sequence length, Batch size, Num classes)
+    idx2char: dictionary mapping index to character
+    beam_width: int, number of beams to keep
+    """
+    T, B, C = logits.shape
+    # Softmax to get probabilities
+    probs = torch.softmax(logits, dim=2)
+    probs = probs.cpu().detach().numpy() # [T, B, C]
+    
+    decoded_batch = []
+    
+    for b in range(B):
+        # Initialize beam: {(sequence_tuple): (prob_blank, prob_non_blank)}
+        # Empty sequence has prob_blank=1.0, prob_non_blank=0.0
+        beam = {(): (1.0, 0.0)}
+        
+        for t in range(T):
+            next_beam = defaultdict(lambda: (0.0, 0.0))
+            p_t = probs[t, b] # [C]
+            
+            for seq, (p_b, p_nb) in beam.items():
+                # 1. Blank
+                # Extending with blank: current end stays same.
+                # If we ended in blank, we multiply by p_blank.
+                # If we ended in non-blank, we multiply by p_blank (and now effective end is blank).
+                # New score for this seq (ending in blank) is increased.
+                p_blank = p_t[0]
+                n_p_b, n_p_nb = next_beam[seq]
+                n_p_b += (p_b + p_nb) * p_blank
+                next_beam[seq] = (n_p_b, n_p_nb)
+                
+                # 2. Non-Blank
+                # We can iterate over all characters or just top k to save time if C is large.
+                # Here C is small (~39), so we iterate all.
+                for c_idx in range(1, C):
+                    p_char = p_t[c_idx]
+                    char = idx2char[c_idx]
+                    
+                    if len(seq) > 0 and seq[-1] == char:
+                        # Case A: Same character.
+                        # 1. Transitions from non-blank (same char) -> Merge. Update non-blank score.
+                        n_p_b_merge, n_p_nb_merge = next_beam[seq]
+                        n_p_nb_merge += p_nb * p_char
+                        next_beam[seq] = (n_p_b_merge, n_p_nb_merge)
+                        
+                        # 2. Transitions from blank -> New char (duplicate chars in text).
+                        new_seq = seq + (char,)
+                        n_p_b_new, n_p_nb_new = next_beam[new_seq]
+                        n_p_nb_new += p_b * p_char
+                        next_beam[new_seq] = (n_p_b_new, n_p_nb_new)
+                    else:
+                        # Case B: Different character or empty seq.
+                        # Extend sequence.
+                        new_seq = seq + (char,)
+                        n_p_b_new, n_p_nb_new = next_beam[new_seq]
+                        n_p_nb_new += (p_b + p_nb) * p_char
+                        next_beam[new_seq] = (n_p_b_new, n_p_nb_new)
+            
+            # Prune beam
+            # Score = p_b + p_nb
+            sorted_beam = sorted(next_beam.items(), key=lambda x: x[1][0] + x[1][1], reverse=True)
+            beam = dict(sorted_beam[:beam_width])
+            
+        # Get best path
+        best_seq, _ = max(beam.items(), key=lambda x: x[1][0] + x[1][1])
+        decoded_batch.append("".join(best_seq))
+        
     return decoded_batch
 
 def calculate_accuracy(predictions, targets):
