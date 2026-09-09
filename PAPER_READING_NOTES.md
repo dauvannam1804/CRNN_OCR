@@ -232,6 +232,17 @@ Có     :  "hello"                   ← chỉ 5 chữ cái, không có biên!
 
 ![Fig 1 — Framewise vs CTC networks classifying a speech signal](images/Fig1.png)
 
+**🌍 Bảng dịch caption Fig 1 — từng câu một:**
+
+| # | Câu gốc (EN) | Dịch (VI) | 🧭 Ghi chú |
+|---|--------------|-----------|------------|
+| 1 | *Figure 1. Framewise and CTC networks classifying a speech signal.* | Hình 1. Mạng framewise và mạng CTC phân loại một tín hiệu âm thanh. | "classifying a speech signal" = gán nhãn phoneme cho từng thời điểm của audio. |
+| 2 | *The shaded lines are the output activations, corresponding to the probabilities of observing phonemes at particular times.* | Các đường tô đậm là output activation — ứng với xác suất quan sát thấy phoneme tại từng thời điểm cụ thể. | Chính là "label probability" trên trục dọc (0–1): output sau softmax, mỗi đường màu = 1 phoneme. |
+| 3 | *The CTC network predicts only the sequence of phonemes (typically as a series of spikes, separated by 'blanks', or null predictions), while the framewise network attempts to align them with the manual segmentation (vertical lines).* | Mạng CTC chỉ dự đoán **chuỗi** phoneme (thường là một loạt spike, ngăn cách bởi "blank" — dự đoán rỗng), trong khi mạng framewise cố khớp chúng với segmentation thủ công (các đường dọc). | 2 triết lý đối chọi: CTC = "nhả đúng thứ tự" / framewise = "phải đúng cả vị trí". Vertical lines = biên gắn tay (panel 1). |
+| 4 | *The framewise network receives an error for misaligning the segment boundaries, even if it predicts the correct phoneme (e.g. 'dh').* | Mạng framewise nhận error vì lệch biên segmentation, ngay cả khi nó dự đoán ĐÚNG phoneme (ví dụ 'dh'). | ⭐ Câu "phạt oan" — ý chính của cả figure (chi tiết toy tính loss ở ý 2 trên đây). |
+| 5 | *When one phoneme always occurs beside another (e.g. the closure 'dcl' with the stop 'd'), CTC tends to predict them together in a double spike.* | Khi một phoneme luôn xuất hiện cạnh phoneme khác (ví dụ âm đóng khí 'dcl' đi cùng âm tắc 'd'), CTC có xu hướng dự đoán chúng cùng nhau thành một spike kép. | Bằng chứng CTC học phụ thuộc giữa các nhãn ngầm định (không ai dạy) — nối tới [!TIP] phía dưới. |
+| 6 | *The choice of labelling can be read directly from the CTC outputs (follow the spikes), whereas the predictions of the framewise network must be post-processed before use.* | Nhãn có thể được đọc trực tiếp từ output CTC (follow the spikes), trong khi dự đoán của framewise phải post-process trước khi dùng được. | "Choice of labelling" = chuỗi nhãn kết quả. Trả thẳng cho "both problems" mục 3️⃣: CTC bỏ được post-processing. |
+
 **📖 Cách đọc Fig 1 — 3 panel, chung 1 trục thời gian (trái → phải = câu "the sound of"):**
 
 ```
@@ -280,9 +291,158 @@ tách mảng:  [0:1500][1500:3000] [3000:5000][5000:9000][9000:14000] ...
 **Ý đồ của figure — authors muốn chứng minh 4 điều:**
 
 1. **Đối chiếu 2 kiểu output trên cùng 1 audio**: framewise cho "gò" rộng mềm (mỗi phoneme chiếm 1 khoảng), CTC cho spike sắc ném tại 1 điểm. Khác biệt này đến từ **cách train**, không phải kiến trúc.
+
+   *Giải thích kỹ — vì sao cùng output mà hình dạng khác nhau:*
+
+   Cả 2 panel đều là output per-frame sau softmax (mỗi frame → phân phối xác suất trên các phoneme, tổng = 1). Khác nhau nằm ở **loss shape quyết định**:
+
+   ```
+   Framewise:  loss = Σ cross-entropy(nhãn frame t, dự đoán frame t)  ∀t
+               → label "aw" gắn cho TẤT CẢ ~64 frame của đoạn 0.3s
+               → network BẮT BUỘC giữ P(aw) cao suốt 64 frame  → GÒ RỘNG
+
+   CTC:        loss = −log Σ P(mọi path collapse ra đúng transcript)
+               → chỉ cần tổng xác suất các path đọc ra "…aw…" là đủ
+               → cách rẻ nhất: dồn cả khối xác suất vào 1 frame (spike),
+                 frame còn lại nhả blank                      → SPIKE NHỌN
+   ```
+
+   **🔢 Toy tính loss — 6 frame, transcript `[a][w]` (đơn giản hóa số cho dễ tính):**
+
+   ```
+   FRAMEWISE — label tay từng frame:  a a a w w w
+     f1: P(a)=.9 → CE=−log(.9)=.10        f4: P(w)=.6 → CE=−log(.6)=.51
+     f2: P(a)=.8 → CE=.22                 f5: P(w)=.8 → CE=.22
+     f3: P(a)=.7 → CE=.36                 f6: P(w)=.9 → CE=.10
+     loss = .10+.22+.36+.51+.22+.10 = 1.51
+            ← phải đúng TỪNG frame; f3/f4 là vùng chuyển tiếp mơ hồ
+              nhưng vẫn bị tính FULL giá
+
+   CTC — chỉ có transcript "aw", KHÔNG có label tay.
+   Path = 1 cách điền nhãn/blank vào 6 frame; collapse = gộp lặp + bỏ blank:
+
+     path            collapse    đúng "aw"?   P(path) = tích từng frame
+     a a a w w w  →  aw          ✓           .9·.8·.7·.6·.8·.9 = .194  ┐
+     a a − w w w  →  aw          ✓           .9·.8·(blank)·.6·.8·.9    ├ cộng MỌI path ✓
+     a − a − w w  →  aw          ✓           …                          │
+     − a − w − w  →  aw          ✓           …                         ┘
+     w a a a a a  →  wa          ✗           (không tính)
+
+     loss = −log( Σ P(path ✓) )
+            ← model TỰ CHỌN cách phân bổ: dồn 1 điểm (spike) hay trải đều (gò)
+              — loss CTC đều "thừa nhận" cả hai, miễn đọc ra đúng "aw"
+   ```
+
+   → Kiến trúc (RNN + softmax) **y hệt**, chỉ đổi objective là hình dạng output đổi theo. Đây là bằng chứng trực quan nhất cho luận điểm "CTC là cách **train**, không phải kiến trúc mới".
+
 2. **Framewise bị phạt oan** (ý chính): vì label train gắn theo biên thủ công, model phải khớp CẢ BIÊN — mà biên giữa 2 phoneme vốn mơ hồ (âm chuyển tiếp dần). Đoán đúng 'dh' nhưng hump lệch vạch 1 chút → vẫn ăn error. CTC không có label per-frame nên không bị ràng buộc này.
+
+   *Giải thích kỹ — cơ chế "phạt oan" bằng số:*
+
+   ```
+   Thực tế :  âm "dh" chuyển dần sang "ax" (coarticulation) — không có ranh giới cứng
+   Người gắn:  vẽ biên tại frame 50 (tùy ý, chênh ±vài frame là chuyện thường)
+   Model   :  đặt điểm chuyển tiếp tại frame 48 (hoàn toàn hợp lý!)
+   ```
+
+   **🔢 Toy tính loss — 4 frame quanh biên (biên tay vẽ sau f2):**
+
+   ```
+   FRAME    :   f1    f2    f3    f4
+   âm thật  :   dh   dh→ax   ax       ← chuyển TIẾP DẦN, không ranh giới cứng
+   label tay:   dh    dh  | ax    ax  ← gắn cứng: "từ f3 là ax"
+   model    :   dh    dh    dh    ax  ← model chuyển trễ ở f4 (hợp lý!)
+   ─────────────────────────────────────────
+   CE frame :  .05   .05  [0.92]  .08
+                       ──────
+                        ↑ PHẠT OAN: f3 là âm chuyển mơ hồ, model vẫn đang
+                          nói "dh" (đúng thực tế!) nhưng label ép "ax"
+                          → −log P(model tự tin "dh") = penalty lớn
+
+   Cùng output này, nhìn bằng CTC: KHÔNG TỒN TẠI label "f3=ax" để so
+   → loss không biết (cũng không cần biết) model chuyển ở f3 hay f4
+   → miễn spike "dh" đứng TRƯỚC spike "ax" là 0 phạt.
+   ```
+
+   → Frame 48–49: label tay nói "ax" nhưng model đoán "dh" → **2 frame ăn error oan**, dù model nghe đúng. Nhân với hàng nghìn câu corpus = hàng triệu frame phạt oan → gradient dồn sức khớp **biên** (thứ vốn tùy ý) thay vì khớp **âm** (thứ quan trọng). Caption Fig 1 là phường minh họa: *"receives an error for misaligning the segment boundaries, even if it predicts the correct phoneme"*.
+
+   CTC thoát vì **không tồn tại nhãn per-frame để khớp**: loss chỉ hỏi "path nào đọc ra đúng transcript không?" — model tự chọn chỗ nhả phoneme, không ai ép nó chuyển đúng frame 50.
+
 3. **Blank hoạt động đúng thiết kế**: nhìn panel CTC — giữa các spike, blank ≈ 1. Blank làm 2 việc: (a) tách các label cạnh nhau, (b) phân biệt ký tự lặp (`aa` ≠ `a`) — nền cho map B ở B3/B4.
+
+   *Giải thích kỹ — 2 vai trò của blank qua ví dụ collapse:*
+
+   ```
+   (a) "Không nhả gì"   : giữa 2 spike, blank ≈ 1 (đường đứt gần đỉnh)
+                          → network được phép "im lặng", không bị ép đoán phoneme mỗi frame
+
+   (b) Phân biệt lặp    : quy tắc collapse = "gộp frame liền nhau CÙNG nhãn"
+       frame `l l`      → collapse → `l`     (1 chữ l)
+       frame `l − l`    → collapse → `ll`    (2 chữ l: blank CHẶN, không gộp được)
+                          (− = blank)
+       → không có blank thì "l" và "ll" KHÔNG THỂ phân biệt được
+   ```
+
+   **🔢 Toy từng bước collapse + hình xác suất (chuỗi cần = "ll", 8 frame):**
+
+   ```
+   Nếu KHÔNG có blank:  frame `l l l l` → gộp lặp → `ll`
+                        ...nhưng người viết "ll" hay "lll"? — MÂY MÙ
+
+   CÓ blank — collapse = [gộp lặp] + [bỏ blank], làm theo thứ tự:
+     frame   :  l   l   −   l   −   −   −   −
+                 │   │       │
+     bước 1 gộp lặp: l l → l   (2 frame đầu liền nhau cùng nhãn)
+                     l − l: giữa có − chặn → KHÔNG gộp → giữ "l l"
+     bước 2 bỏ blank: đọc phần còn lại theo thứ tự
+     kết quả :  `l`        (từ `l l`)          ← 1 chữ l
+                `ll`       (từ `l − l`)       ← 2 chữ l  ✓ PHÂN BIỆT ĐƯỢC
+
+   Nhìn xác suất (panel CTC):
+   P                                    spike "l"      spike "l"
+   1.0 ┤                                ▲              ▲
+       │                               ██             ██
+   blank┤ ▁▁▁▁▁▁▁▁blank≈1▁▁▁▁▁▁▁▁▁▁▁███▁▁blank≈1▁▁▁███▁▁▁
+       └────────────────────────────────────────────────→ frame
+        "chưa nhả gì"   └nhả l┘ "vẫn chờ" └nhả l thêm┘ "hết"
+   ```
+
+   Trong Fig 1: blank luôn "thắng" (≈1) ở mọi khoảng giữa spike — đúng như thiết kế: đó là những frame "chưa nhả nhãn mới".
+
 4. **"Follow the spikes" — đọc label trực tiếp**: theo thứ tự spike trong panel CTC là ra `dh ax s aw n dcl d ix v`, không cần post-processing. Ngược lại panel framewise các gò chồng lấn, phải xử lý thêm mới ra chuỗi.
+
+   *Giải thích kỹ — quy trình decode 2 phía:*
+
+   ```
+   Framewise: output thô `dh dh dh ax ax s…` (mỗi frame 1 nhãn)
+              → phải collapse gộp frame liền nhau
+              → vùng chuyển tiếp 2 gò CHỒNG LẤN (P(dh)=0.5, P(ax)=0.45)
+                → không rõ frame đó thuộc nhãn nào → cần ngưỡng/rule thêm
+              → mới ra chuỗi final.  (2 bước thủ công: pre-segment + post-process)
+
+   CTC      : argmax từng frame → `− − dh − ax − s …` (− = blank)
+               → collapse + bỏ blank → `dh ax s aw n dcl d ix v`
+               → "follow the spikes": spike nào trước ra nhãn đó trước,
+                 KHÔNG cần biết spike nằm đúng biên hay không.
+   ```
+
+   **🔢 Toy decode từng bước (chuỗi "as", 11 frame):**
+
+   ```
+   CTC — decode greedy:
+     frame   :  −   −   a   a   −   s   s   −   −   −   −
+     bước 1 gộp lặp  :  −   a   −   s   −   −   −
+     bước 2 bỏ blank :  a   s                          ← XONG! không rule thêm
+                         (spike ở đâu KHÔNG quan trọng — chỉ quan trọng THỨ TỰ)
+
+   FRAMEWISE — decode cùng đoạn, vùng gò chồng lấn:
+     frame   :  a   a  [?]   s   s
+     [?] = frame biên: P(a)=.48  P(s)=.47  → gần như HOÀ
+           → argmax nhạy cảm: đổi 1 frame biên là chuỗi kết quả đổi
+           → bắt buộc cần ngưỡng/rule ngoài (post-processing)
+   ```
+
+   → Đây là "both problems" của mục 3️⃣ được CTC hóa giải trọn vẹn: không cần nhãn per-frame lúc train, không cần post-process lúc test.
 
 > [!TIP]
 > Chi tiết dễ bỏ sót: quanh "of" thấy **spike kép `dcl d`** — 2 phoneme luôn đi cùng nhau nên CTC học dự đoán chúng thành 1 cú spike đôi. Đây là bằng chứng CTC **implicit** học inter-label dependency (paper §6, sẽ thấy ở B5).
