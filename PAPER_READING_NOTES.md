@@ -243,6 +243,32 @@ Có     :  "hello"                   ← chỉ 5 chữ cái, không có biên!
 | 5 | *When one phoneme always occurs beside another (e.g. the closure 'dcl' with the stop 'd'), CTC tends to predict them together in a double spike.* | Khi một phoneme luôn xuất hiện cạnh phoneme khác (ví dụ âm đóng khí 'dcl' đi cùng âm tắc 'd'), CTC có xu hướng dự đoán chúng cùng nhau thành một spike kép. | Bằng chứng CTC học phụ thuộc giữa các nhãn ngầm định (không ai dạy) — nối tới [!TIP] phía dưới. |
 | 6 | *The choice of labelling can be read directly from the CTC outputs (follow the spikes), whereas the predictions of the framewise network must be post-processed before use.* | Nhãn có thể được đọc trực tiếp từ output CTC (follow the spikes), trong khi dự đoán của framewise phải post-process trước khi dùng được. | "Choice of labelling" = chuỗi nhãn kết quả. Trả thẳng cho "both problems" mục 3️⃣: CTC bỏ được post-processing. |
 
+**🎨 "The shaded lines" = các đường vẽ trong hình — ý nghĩa TỪNG LOẠI ĐƯỜNG:**
+
+> 💡 "Shaded lines" là cách diễn đạt thời ~2006 = **những đường được vẽ ra** (output curves), KHÔNG phải vùng tô màu hay gạch chéo. Câu 2 của caption nói chung cho cả panel 2 lẫn panel 3 — đều là output activation sau softmax.
+
+| Loại đường (nhìn thẳng vào hình) | Panel | Ý nghĩa | Vì sao có dạng đó |
+|---|---|---|---|
+| **Đường đen lởm chởm, dao động quanh 0** | 1 | Waveform = biên độ âm thanh theo thời gian | Đơn vị là **biên độ**, KHÔNG phải xác suất — nên chỉ panel này không có trục 0–1. Đoạn dày đặc = đang phát tiếng, thưa = im lặng |
+| **Vạch dọc đứt quãng** chạy xuyên từ trên xuống | cả 3 | Biên segmentation **THỦ CÔNG** (TIMIT): mỗi cặp vạch ôm đúng 1 phoneme | Cả 3 panel dùng chung 1 trục thời gian nên vạch thẳng hàng từ waveform xuống CTC — đây là "đáp án" con người gắn tay, để đối chiếu output của model |
+| **Đường MÀU cong bồng bềnh — gò RỘNG, MỀM** | 2 | Mỗi đường = P(1 phoneme) tại từng frame (0–1) | Train per-frame: MỌI frame trong đoạn 'aw' đều được gán nhãn 'aw' → mạng học phân phối TRẢI ĐỀU cả đoạn → ra gò rộng. Đường nào đang ôm gần 1 = phoneme đang được phát âm lúc đó |
+| **Đường đen ĐỨT NÉT nằm ~1 suốt giữa hình** | 2 | Vẫn là 1 đường P(phoneme) — theo vị trí thì là 'aw' (nguyên âm dài giữa "sound") | Nhiều đường xác suất chồng nhau nên paper phân biệt bằng **màu × kiểu nét** (liền/đứt/chấm) — nét đứt KHÔNG có ý nghĩa gì đặc biệt, chỉ để khỏi lẫn |
+| **Đường CHẤM mảnh nằm ~1, kéo dài giữa các spike** | 3 | Xác suất **BLANK '—'** (null prediction) | Giữa 2 lần nhả phoneme, blank ≈ 1 = "giữ nguyên, chưa nhả gì mới"; đúng khoảnh khắc có spike thì blank tụt về ~0 → đúng cụm "spikes separated by 'blanks'" trong caption |
+| **Spikes NHỌN — vọt lên rồi tụt ngay tại 1 điểm** | 3 | Mỗi spike = 1 lần **nhả phoneme** tại 1 thời điểm | CTC train theo chuỗi → chỉ quan tâm nhả Ở ĐÂU, không quan tâm kéo dài bao lâu → spike sắc, hẹp. Đọc nhãn: **thứ tự spike trái → phải = chuỗi nhãn cuối** (câu 6 caption) |
+| **Hai spike KÉP dính nhau vùng "dcl"+"d"** | 3 | Double spike — minh họa sống câu 5 caption | 'dcl' (đóng khí) LUÔN xuất hiện ngay trước 'd' (âm tắc) → CTC tự học phụ thuộc giữa 2 nhãn (không ai dạy) → nhả 2 spike sát nhau |
+| **Chữ ở đáy: dh, ax, s… và "the", "sound", "of"** | đáy | 2 lớp nhãn: phoneme = đơn vị network phân loại; từ = transcript thô | Cho biết chuỗi phoneme ghép ra từ nào. Speech có sẵn label 2 tầng này; OCR chỉ có chữ cuối ("hello") |
+
+**🎯 Mẹo đọc — CÙNG MÀU = CÙNG PHONEME ở cả 2 panel:** đường đỏ = 'dh' (gò đầu panel 2 ↔ spike đầu panel 3), đường cyan cuối = 'v'. Hai panel cố tình vẽ dọc nhau, chung trục "label probability" 0–1, để đối chiếu thẳng: **cùng 1 phoneme → framewise cho GÒ RỘNG, CTC cho SPIKE NHỌN** — khác biệt 100% đến từ loss (per-frame vs per-sequence), không phải kiến trúc.
+
+```
+PANEL 1 · Waveform  : ∿∿∿▓▓▓▓∿∿∿▓▓▓▓▓▓▓∿∿∿    ← đen dao động = biên độ (KHÔNG phải xác suất)
+                      ¦      ¦     ¦ ¦  ¦      ← vạch dọc đứt = biên phoneme gắn TAY
+PANEL 2 · Framewise : ╱▔╲_  ╱▔▔▔▔▔╲__ ╱▔╲     ← đường màu MỀM/RỘNG = P(phoneme) từng frame
+                      (gò trải đều trên whole đoạn phoneme, đỉnh ~1 khi đang phát)
+PANEL 3 · CTC       : ┈┈┈┈┈▲┈┈┈┈▲┈┈▲▲┈┈▲      ← ┈ chấm ~1 = blank; ▲ nhọn = nhả phoneme
+                      (giữa 2 spike blank≈1; tại spike, blank tụt về 0)
+```
+
 **📖 Cách đọc Fig 1 — 3 panel, chung 1 trục thời gian (trái → phải = câu "the sound of"):**
 
 ```
@@ -254,7 +280,8 @@ Panel 3 · CTC       : các "spike" NHỌN + khoảng giữa là blank
                       (đường đứt nét gần 1 = "đang không nhả ký tự nào").
 ```
 
-**🔢 Waveform panel 1 thực chất là dữ liệu gì? — ví dụ minh họa (ước lượng, tròn 2 giây, TIMIT 16 kHz):**
+<details>
+<summary>🔢 <b>Waveform panel 1 thực chất là dữ liệu gì?</b> — ví dụ minh họa (ước lượng, tròn 2 giây, TIMIT 16 kHz) — <i>👆 bấm để mở/đóng</i></summary>
 
 ```python
 import numpy as np
@@ -287,6 +314,8 @@ tách mảng:  [0:1500][1500:3000] [3000:5000][5000:9000][9000:14000] ...
 - ⚠️ Con số 32,000 là **ước lượng minh họa** (giả định đoạn dài tròn 2 giây), không phải số liệu từ paper — Fig 1 không ghi độ dài hay số sample
 
 **↳ So sánh với ảnh OCR (trắng/xám):** waveform = mảng **1D** `(32000,)` — 1 số (biên độ) theo thời gian; ảnh grayscale = ma trận **2D** `(cao, rộng)` numpy, mỗi phần tử 0–255 (đen→trắng), binary thì chỉ 0/1. Điểm chung: RNN đều đọc theo **trục thời gian** — trục width của ảnh OCR (cột ký tự = timestep) ≈ trục thời gian của waveform/spectrogram → cùng 1 kiến trúc CTC chạy được cho cả speech lẫn OCR.
+
+</details>
 
 **Ý đồ của figure — authors muốn chứng minh 4 điều:**
 
@@ -398,13 +427,25 @@ tách mảng:  [0:1500][1500:3000] [3000:5000][5000:9000][9000:14000] ...
      kết quả :  `l`        (từ `l l`)          ← 1 chữ l
                 `ll`       (từ `l − l`)       ← 2 chữ l  ✓ PHÂN BIỆT ĐƯỢC
 
-   Nhìn xác suất (panel CTC):
-   P                                    spike "l"      spike "l"
-   1.0 ┤                                ▲              ▲
-       │                               ██             ██
-   blank┤ ▁▁▁▁▁▁▁▁blank≈1▁▁▁▁▁▁▁▁▁▁▁███▁▁blank≈1▁▁▁███▁▁▁
-       └────────────────────────────────────────────────→ frame
-        "chưa nhả gì"   └nhả l┘ "vẫn chờ" └nhả l thêm┘ "hết"
+   Nhìn xác suất (panel CTC) — tách thành 2 đường cho dễ đọc, chung trục 8 frame:
+
+   frame        : f1  f2  f3  f4  f5  f6  f7  f8
+   nhãn đúng    : l   l   −   l   −   −   −   −        (− = blank)
+
+   P("l")   1.0 ┤ ██  ██      ██                    ← P("l") = 1.0 tại frame nhả "l"
+                │ ██  ██      ██
+            0.0 ┼────────────────────────────────→ frame
+
+   P(blank) 1.0 ┤         ██      ██  ██  ██  ██      ← blank ≈ 1 mọi frame "chờ"
+                │         ██      ██  ██  ██  ██
+            0.0 ┼────────────────────────────────→ frame
+                  ↑ blank = 0 đúng 3 frame có spike — 2 đường BỊ TRỪ NHAU
+
+   ĐỌC THEO SPIKE (collapse):
+     f1 f2 : 2 frame "l" LIỀN NHAU → gộp lặp  → 1 chữ "l"
+     f3    : blank CHẶN ở giữa (ngăn 2 chữ "l" dính nhau)
+     f4    : "l" đứng SAU blank → KHÔNG gộp → chữ "l" thứ 2
+     f5→f8 : blank "im lặng" đến hết          ⇒ chuỗi "ll" ✓
    ```
 
    Trong Fig 1: blank luôn "thắng" (≈1) ở mọi khoảng giữa spike — đúng như thiết kế: đó là những frame "chưa nhả nhãn mới".
@@ -462,14 +503,90 @@ tách mảng:  [0:1500][1500:3000] [3000:5000][5000:9000][9000:14000] ...
 - [ ] ❗ Bỏ qua công thức ở lần đọc 1 — chỉ lấy trực giác
 
 **Key points:**
-- Paper không có mục "intuition" — phần này tự diễn giải.
-- Analogy karaoke: biết lời bài hát nhưng không biết từng từ rơi vào nhịp nào.
-- CTC **không commit vào 1 alignment** — nó cộng xác suất của MỌI path có thể (eq 3).
-- Blank = "nhịp này chưa nhả ký tự mới". Toy: label `aa` trên 4 steps → các path `aa--`, `-aa-`, `a-a--`… đều collapse về `aa` qua map B.
-- Trong code: blank cố định ở index 0 (`src/dataset.py:13-15`).
+
+🧭 **Mức đọc của mục này:** paper không có mục "intuition" — phần này tự diễn giải, bám vào đúng 2 chỗ: đoạn mô tả blank ngay đầu §3.1 (trước eq 2) và caption Fig 1. Hai công thức eq(2)(3) chỉ cần "nhìn qua", đi sâu ở **B4**.
+
+**1️⃣ Trực giác cốt lõi: biết "cái gì" nhưng không biết "ở đâu" — analogy karaoke.**
+
+Biết nguyên lời bài hát (transcript), nhưng không biết từng từ rơi vào nhịp nào (alignment). Hát karaoke vẫn được vì chỉ cần **đúng thứ tự** — không cần đúng nhịp. CTC cũng vậy: chỉ cần spike đúng **thứ tự** (Fig 1, "follow the spikes").
+
+```
+Cái mình CÓ   :  transcript "AB"                          ← biết có A rồi đến B
+Cái mình THIẾU:  A rơi vào cột nào? B rơi vào cột nào?   ← alignment
+```
+
+↳ Đây chính là "câu hỏi trung tâm" đã nêu ở B1-3️⃣ — giờ thêm mảnh ghép then chốt: thay vì *đoán 1 alignment duy nhất*, CTC **lấy tất cả**: coi MỌI cách ghép đều khả dĩ và cộng lại (→ 4️⃣).
+
+**2️⃣ Blank = "nhịp này chưa nhả ký tự mới" — unit thứ `|L|+1` của softmax.**
+
+> 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §3.1 (tr.2) — mô tả blank ngay trước eq(2)</span>
+>
+> *"The activation of the extra unit is the probability of observing a 'blank', or no label."*
+>
+> <span style="color:#777">↳ "extra unit" = unit thứ |L|+1: vocab N ký tự → softmax ra N+1 đầu, đầu thừa đó chính là blank.</span>
+
+Blank cho network quyền **im lặng** — không bị ép đoán 1 ký tự ở mọi cột như framewise (B2-3️⃣). Trong panel CTC của Fig 1: blank ≈ 1 ở giữa 2 spike = "đang chờ, chưa nhả gì mới".
+
+**3️⃣ Quy tắc collapse (map B): gộp lặp + bỏ blank — kèm cái bẫy của ký tự lặp.**
+
+> 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §3.1 (tr.3) — định nghĩa map B, chính paper giải nghĩa trực giác</span>
+>
+> *"We do this by simply removing all blanks and repeated labels from the paths (e.g. B(a−ab−) = B(−aa−−abb) = aab)."*
+>
+> *"Intuitively, this corresponds to outputting a new label when the network switches from predicting no label to predicting a label, or from predicting one label to another (c.f. the CTC outputs in figure 1)."*
+>
+> <span style="color:#777">↳ Đọc hiểu: chỉ "nhả chữ mới" khi path CHUYỂN TRẠNG THÁI (blank → ký tự, hoặc ký tự → ký tự KHÁC). Ký tự lặp liền nhau không phải chuyển trạng thái → bị gộp.</span>
+
+**🔎 Câu hỏi hay: "removing all blanks and repeated labels" — đọc theo thứ tự nào (bỏ blank trước hay gộp lặp trước)?**
+
+Paper **không có câu nào nói thẳng thứ tự** — và 2 ví dụ trong ngoặc **không phân định được**, vì cả 2 cách đọc đều ra `aab`:
+
+```
+− a a − − a b b  →(bỏ blank trước)→ a a a b b →(gộp lặp)→ a a b
+                 →(gộp lặp trước)→ − a − a b →(bỏ blank)→ a a b   ← giống hệt!
+```
+
+Cái phân định nằm ở **3 chỗ khác**:
+
+1. **Câu "Intuitively…" ngay sau ví dụ** (trích trên): chỉ nhả chữ khi chuyển trạng thái ⇒ `aa` → "a" (không chuyển), còn `a−a` → "aa" (blank→ký tự là 1 lần chuyển) ⇒ blank **chặn gộp** ⇒ gộp lặp trước, bỏ blank sau.
+2. **§4.1 (tr.4)**: skip transition chỉ cho phép *"between any pair of **distinct** non-blank labels"* — chữ *distinct* chỉ có ý nghĩa khi `a−a` ≠ `aa` (nếu bỏ blank trước thì 2 ký tự này vô phân biệt).
+3. **Code nhàu — `decode_greedy` (`src/utils.py:23-28`)**: chỉ nhả ký tự khi `char_idx != last_char` (khác ký tự liền trước trong path) **và** `char_idx != 0` (không phải blank) = đúng ngữ nghĩa "nhả khi chuyển trạng thái".
+
+*(Nguồn ngoài nói thẳng thứ tự: Hannun, "Sequence Modeling with CTC", Distill 2017 — "collapse repeats, then remove blanks" — và mọi CTC implementation.)*
+
+**🔢 Toy — label `aa` trên 4 steps, path nào đọc ra được `aa`?**
+
+```
+Quy tắc: đi từng bước, nhả chữ mỗi khi (blank→ký tự) hoặc (ký tự→ký tự khác)
+
+  path        đọc ra    vì sao
+  a − a −  →  "aa" ✓    a nhả 1 lần, blank chặn, a nhả lần 2
+  − a − a  →  "aa" ✓    blank đầu = "chưa bắt đầu"
+  a − − a  →  "aa" ✓    thêm/bớt blank giữa 2 chữ không đổi kết quả
+  a a − a  →  "aa" ✓    2 a LIỀN NHAU chỉ nhả 1 "a" — blank sau mới cho nhả "a" thứ 2
+  ─────────────────────────────────────────────────
+  a a − −  →  "a"  ✗    trông giống "aa" nhưng 2 a liền nhau bị GỘP
+  − a a −  →  "a"  ✗    không có blank giữa 2 a ⇒ không bao giờ ra 2 chữ a
+```
+
+⚠️ **Cái bẫy:** `aa−−` nhìn giống `aa` nhưng collapse ra `a`. Muốn chữ **lặp** (`aa`, `ll`, `"AA"`…) **bắt buộc** phải có blank chèn giữa — nền cho edge case ở B9.
+
+**4️⃣ CTC không commit vào 1 alignment — cộng xác suất của MỌI path (dẫn tới eq 3).**
+
+> 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §3.1 (tr.2) — 2 câu "vàng" ngay đầu §3.1</span>
+>
+> *"Together, these outputs define the probabilities of all possible ways of aligning all possible label sequences with the input sequence. The total probability of any one label sequence can then be found by summing the probabilities of its different alignments."*
+>
+> <span style="color:#777">↳ p("aa"|x) = cộng xác suất của cả 4 path ✓ ở toy trên (cùng mọi path khác) — không chọn path nào làm "đáp án chuẩn".</span>
+
+↳ Vì sao SUM chứ không lấy path tốt nhất? Model chưa học thì không biết chỗ nào đúng — ép chọn 1 alignment là quay lại lỗi "phạt oan" của framewise (B2-5️⃣). Sum hết → model **tự dồn** xác suất về các path đúng trong lúc train. *(Số path mũ T nên không đếm tay được → DP forward-backward, ở B4.)*
+
+**5️⃣ Gắn với repo: blank cố định ở index 0 (`src/dataset.py:14-15`).**
+
+`char2idx` đánh số ký tự **từ 1** (`idx + 1`), chừa **0** cho blank (`# 0 is reserved for blank`) ↔ khớp softmax `|L|+1` units ở 2️⃣. Vị trí index của blank chỉ là **convention** — điều kiện duy nhất: encode (dataset) và decode (train/inference) phải nhất quán.
 
 > [!TIP]
-> Tự vẽ toy `aa` lên giấy trước khi sang B4 — đây là nền cho toàn bộ phần technical.
+> Tự vẽ toy `aa` lên giấy trước khi sang B4 — đây là nền cho toàn bộ phần technical. Kiểm tra mình: (1) toy trên liệt kê 4/5 path ✓ — path thứ 5 nào nữa? (2) giải thích được vì sao `aa−−` ✗ chưa?
 
 **✍️ Ghi chú của tôi:**
 
