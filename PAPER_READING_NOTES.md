@@ -6,7 +6,7 @@
 > **Màu theo phase:** 🟨 Context (B1–B3) · 🟥 Core technical (B4–B5) · 🟦 So sánh & bối cảnh (B6–B9) · 🟩 Bằng chứng & tổng hợp (B10–B13)
 >
 > **Quy ước trong từng mục:**
-> - 🔢 **Key point đánh số** — diễn giải của tôi, không có trong paper.
+> - 🔢 **Key point đánh số** — badge nền cam `#FFE0B2` — diễn giải của tôi, không có trong paper; mọi bullet dưới **Key points:** cũng được tô cam.
 > - 🟣 Khối `📜 PAPER · <vị trí>` — **trích dẫn nguyên văn** từ paper, kèm trang; đặt **ngay dưới key point mà nó chứng minh**.
 > - `↳` dòng xám — giải nghĩa quote liên hệ về key point.
 >
@@ -53,7 +53,7 @@ Paper 8 trang. Đọc **theo thứ tự B1→B13** (không theo thứ tự trang
 
 **Key points:**
 
-**1️⃣ CTC = huấn luyện RNN gán nhãn chuỗi không cần pre-segmented data, mọi thứ trong 1 kiến trúc.**
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">1️⃣ CTC = huấn luyện RNN gán nhãn chuỗi không cần pre-segmented data, mọi thứ trong 1 kiến trúc.</span>
 
 > 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · Abstract (tr.1) — câu kết Abstract</span>
 >
@@ -67,7 +67,7 @@ Paper 8 trang. Đọc **theo thứ tự B1→B13** (không theo thứ tự trang
 >
 > <span style="color:#777">↳ nguồn của ý "mọi thứ trong 1 kiến trúc".</span>
 
-**2️⃣ Alignment được gộp vào trong network — không phải HMM align hộ từ bên ngoài.**
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">2️⃣ Alignment được gộp vào trong network — không phải HMM align hộ từ bên ngoài.</span>
 
 > 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §1 (tr.2, cùng đoạn) — câu "basic idea"</span>
 >
@@ -80,12 +80,12 @@ Paper 8 trang. Đọc **theo thứ tự B1→B13** (không theo thứ tự trang
 - **Cách cũ 2 — hybrid HMM-RNN:** HMM tự align hộ + post-processing output (§1, tr.1–2 — sẽ đọc kỹ ở B2).
 - **CTC:** bỏ cả hai — network **tự học alignment** trong lúc train.
 
-**3️⃣ Câu hỏi trung tâm:** input T time-steps, output U labels (U ≤ T), **không ai chỉ cho mình cặp nào khớp cặp nào** — học thế nào?
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">3️⃣ Câu hỏi trung tâm:</span> input T time-steps, output U labels (U ≤ T), **không ai chỉ cho mình cặp nào khớp cặp nào** — học thế nào?
 *(Chỉ là intuition rút ra từ Abstract, chưa cần đọc gì thêm. Bản formal hóa chính thức của câu hỏi này nằm ở §2 Temporal Classification (tr.2) — sẽ đọc kỹ ở **B4**, không phải bây giờ.)*
 
-**4️⃣ Gắn với repo — so sánh 2 kiểu data khi train:**
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">4️⃣ Gắn với repo — so sánh 2 kiểu data khi train:</span>
 
-> *Thuật ngữ: **cột = time-step**. ⚠️ Lưu ý phạm vi: **paper 2006 chỉ nói RNN**, với input **đã là chuỗi 1D** (speech frames — mỗi frame là 1 time-step). Còn repo mình dùng **CRNN (Shi et al. 2015)** — bản mở rộng **sau** paper: **CNN** phụ trách biến ảnh 2D thành chuỗi 1D (các dải dọc, imgW=100 → T=25 time-steps), phần **RNN + CTC** phía sau chạy đúng như paper. Khi giảng: nói rõ "paper = RNN + CTC; CNN chỉ là phần chuẩn bị input của mình".*
+> *Thuật ngữ: **cột = time-step**. ⚠️ Lưu ý phạm vi: **paper 2006 chỉ nói RNN**, với input **đã là chuỗi 1D** (speech frames — mỗi frame là 1 time-step). Còn repo mình dùng **CRNN (Shi et al. 2015)** — bản mở rộng **sau** paper: **CNN** phụ trách biến ảnh 2D thành chuỗi 1D (các dải dọc, imgW=100 → T=26 time-steps), phần **RNN + CTC** phía sau chạy đúng như paper. Khi giảng: nói rõ "paper = RNN + CTC; CNN chỉ là phần chuẩn bị input của mình".*
 
 **Kiểu 1 — Có label từng cột (segmented) — cách truyền thống TRƯỚC CTC:**
 
@@ -133,7 +133,7 @@ Ngoài ra chữ/số nét đậm nhạt, dính nhau… ⇒ càng không thể g�
 
 🧭 **Mạch của §1** (giữ mạch này khi giảng): HMM/CRF chủ đạo nhưng có 3 nhược điểm (1️⃣) → RNN khắc phục được cả 3 (2️⃣) → mà RNN lại không dùng trực tiếp được (3️⃣) → workaround hybrid cũng chưa ổn (4️⃣) → Fig 1 trực quan hóa vấn đề (5️⃣). **CTC = lời giải cho đúng mạch này.**
 
-**1️⃣ Trước CTC: HMM/CRF là framework chủ đạo cho sequence labelling — nhưng có 3 nhược điểm.**
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">1️⃣ Trước CTC: HMM/CRF là framework chủ đạo cho sequence labelling — nhưng có 3 nhược điểm.</span>
 
 > 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §1 (tr.1, cột phải)</span>
 >
@@ -155,7 +155,7 @@ Ngoài ra chữ/số nét đậm nhạt, dính nhau… ⇒ càng không thể g�
 
 **↳ CRNN sau này giải quyết gọn:** CNN trích đặc trưng + RNN nắm ngữ cảnh (không cần giả định độc lập) + CTC train **end-to-end discriminative** — không thiết kế tay, không đường vòng.
 
-**2️⃣ RNN khắc phục được cả 3 nhược điểm đó.**
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">2️⃣ RNN khắc phục được cả 3 nhược điểm đó.</span>
 
 > 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §1 (tr.1–2, chuyển cột)</span>
 >
@@ -173,7 +173,7 @@ Ngoài ra chữ/số nét đậm nhạt, dính nhau… ⇒ càng không thể g�
 
 **↳ Tóm lại:** RNN thay "thiết kế tay + giả định + đường vòng generative" bằng **1 cơ chế duy nhất — hidden state + backprop qua thời gian (BPTT)**.
 
-**3️⃣ Nhưng có 1 chướng ngại: objective chuẩn của NN định nghĩa per-frame → phải pre-segment + post-process.**
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">3️⃣ Nhưng có 1 chướng ngại: objective chuẩn của NN định nghĩa per-frame → phải pre-segment + post-process.</span>
 
 > 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §1 (tr.2, đầu cột trái)</span>
 >
@@ -214,7 +214,7 @@ Có     :  "hello"                   ← chỉ 5 chữ cái, không có biên!
 
 *Vì sao gây vấn đề:* cross-entropy định nghĩa trên cặp (dự đoán, nhãn) **cùng một vị trí**. Sequence-level thì cặp này không tồn tại → loss "khoá mép" không khớp → buộc phải **tự tạo** nhãn per-frame (= pre-segmentation) và **tự gộp** dự đoán per-frame (= post-processing). CTC xử lý bằng cách tính loss ngay ở cấp sequence, không cần align.
 
-**4️⃣ Workaround thời điểm đó: hybrid HMM-RNN — nhưng kế thừa nhược điểm HMM.**
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">4️⃣ Workaround thời điểm đó: hybrid HMM-RNN — nhưng kế thừa nhược điểm HMM.</span>
 
 > 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §1 (tr.1–2, cuối phần hybrid)</span>
 >
@@ -222,7 +222,7 @@ Có     :  "hello"                   ← chỉ 5 chữ cái, không có biên!
 >
 > <span style="color:#777">↳ hybrid = HMM align hộ + NN phân loại cục bộ; "aforementioned drawbacks" = đúng 3 nhược điểm ở 1️⃣. Đây là baseline mà CTC đánh bại ở §5 (B10).</span>
 
-**5️⃣ Bằng chứng trực quan (Fig 1): framewise network bị phạt oan.**
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">5️⃣ Bằng chứng trực quan (Fig 1): framewise network bị phạt oan.</span>
 
 > 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · Fig 1 caption (tr.3)</span>
 >
@@ -506,7 +506,7 @@ tách mảng:  [0:1500][1500:3000] [3000:5000][5000:9000][9000:14000] ...
 
 🧭 **Mức đọc của mục này:** paper không có mục "intuition" — phần này tự diễn giải, bám vào đúng 2 chỗ: đoạn mô tả blank ngay đầu §3.1 (trước eq 2) và caption Fig 1. Hai công thức eq(2)(3) chỉ cần "nhìn qua", đi sâu ở **B4**.
 
-**1️⃣ Trực giác cốt lõi: biết "cái gì" nhưng không biết "ở đâu" — analogy karaoke.**
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">1️⃣ Trực giác cốt lõi: biết "cái gì" nhưng không biết "ở đâu" — analogy karaoke.</span>
 
 Biết nguyên lời bài hát (transcript), nhưng không biết từng từ rơi vào nhịp nào (alignment). Hát karaoke vẫn được vì chỉ cần **đúng thứ tự** — không cần đúng nhịp. CTC cũng vậy: chỉ cần spike đúng **thứ tự** (Fig 1, "follow the spikes").
 
@@ -517,7 +517,7 @@ Cái mình THIẾU:  A rơi vào cột nào? B rơi vào cột nào?   ← align
 
 ↳ Đây chính là "câu hỏi trung tâm" đã nêu ở B1-3️⃣ — giờ thêm mảnh ghép then chốt: thay vì *đoán 1 alignment duy nhất*, CTC **lấy tất cả**: coi MỌI cách ghép đều khả dĩ và cộng lại (→ 4️⃣).
 
-**2️⃣ Blank = "nhịp này chưa nhả ký tự mới" — unit thứ `|L|+1` của softmax.**
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">2️⃣ Blank = "nhịp này chưa nhả ký tự mới" — unit thứ `|L|+1` của softmax.</span>
 
 > 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §3.1 (tr.2) — mô tả blank ngay trước eq(2)</span>
 >
@@ -527,7 +527,7 @@ Cái mình THIẾU:  A rơi vào cột nào? B rơi vào cột nào?   ← align
 
 Blank cho network quyền **im lặng** — không bị ép đoán 1 ký tự ở mọi cột như framewise (B2-3️⃣). Trong panel CTC của Fig 1: blank ≈ 1 ở giữa 2 spike = "đang chờ, chưa nhả gì mới".
 
-**3️⃣ Quy tắc collapse (map B): gộp lặp + bỏ blank — kèm cái bẫy của ký tự lặp.**
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">3️⃣ Quy tắc collapse (map B): gộp lặp + bỏ blank — kèm cái bẫy của ký tự lặp.</span>
 
 > 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §3.1 (tr.3) — định nghĩa map B, chính paper giải nghĩa trực giác</span>
 >
@@ -571,7 +571,7 @@ Quy tắc: đi từng bước, nhả chữ mỗi khi (blank→ký tự) hoặc (
 
 ⚠️ **Cái bẫy:** `aa−−` nhìn giống `aa` nhưng collapse ra `a`. Muốn chữ **lặp** (`aa`, `ll`, `"AA"`…) **bắt buộc** phải có blank chèn giữa — nền cho edge case ở B9.
 
-**4️⃣ CTC không commit vào 1 alignment — cộng xác suất của MỌI path (dẫn tới eq 3).**
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">4️⃣ CTC không commit vào 1 alignment — cộng xác suất của MỌI path (dẫn tới eq 3).</span>
 
 > 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §3.1 (tr.2) — 2 câu "vàng" ngay đầu §3.1</span>
 >
@@ -581,7 +581,7 @@ Quy tắc: đi từng bước, nhả chữ mỗi khi (blank→ký tự) hoặc (
 
 ↳ Vì sao SUM chứ không lấy path tốt nhất? Model chưa học thì không biết chỗ nào đúng — ép chọn 1 alignment là quay lại lỗi "phạt oan" của framewise (B2-5️⃣). Sum hết → model **tự dồn** xác suất về các path đúng trong lúc train. *(Số path mũ T nên không đếm tay được → DP forward-backward, ở B4.)*
 
-**5️⃣ Gắn với repo: blank cố định ở index 0 (`src/dataset.py:14-15`).**
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">5️⃣ Gắn với repo: blank cố định ở index 0 (`src/dataset.py:14-15`).</span>
 
 `char2idx` đánh số ký tự **từ 1** (`idx + 1`), chừa **0** cho blank (`# 0 is reserved for blank`) ↔ khớp softmax `|L|+1` units ở 2️⃣. Vị trí index của blank chỉ là **convention** — điều kiện duy nhất: encode (dataset) và decode (train/inference) phải nhất quán.
 
@@ -604,13 +604,74 @@ Quy tắc: đi từng bước, nhả chữ mỗi khi (blank→ký tự) hoặc (
 - [ ] §4.1 rescaling `C_t`, `D_t` (tr.5): chống underflow
 - [ ] §4.2 (tr.5–6): objective eq(12), `α·β` eq(14), gradient eq(15)–(16) + **Fig 4**
 
-**Key points (theo pipeline code):**
-1. Softmax mỗi time-step → `y_t^k` = P(label k tại t); output `|L|+1` units — eq(2) ↔ `log_softmax(2)` tại `src/train.py:53`; `n_class = len(vocab) + 1` tại `src/train.py:142`.
-2. Map `B: L′^T → L≤T`: bỏ blank + gộp ký tự lặp — `B(a−ab−) = B(−aa−−abb) = aab` (§3.1).
-3. eq(3): `p(l|x) = Σ paths` — không thể enumerate (số path mũ T) → cần DP.
-4. Decoding: best path eq(4) (`decode_greedy`) vs prefix search §3.2 (`decode_beam_search`).
-5. Training §4.1: `l′` chèn blank đầu/cuối/giữa, len `2|l|+1` ↔ `extended_targets` (`ctc_loss.py:273-279`); forward α eq(6)–(7) với 3 transition stay/move/skip — skip chỉ khi `l′_s ≠ blank` và `l′_s ≠ l′_{s−2}` ↔ skip mask `ctc_loss.py:40-41`; eq(8) ↔ `ctc_loss.py:294`; backward β ↔ `_compute_beta_matrix`; rescaling `C_t` ↔ log-domain + `logaddexp` trong code.
-6. Gradient §4.2: `α_t(s)β_t(s)` = xác suất mọi path qua symbol s tại t; eq(15)–(16) → error signal `∂O/∂u_t^k = y_t^k − posterior` ↔ `backward()` `ctc_loss.py:314`; Fig 4: error dạng spike, tự triệt tiêu khi hội tụ.
+**Key points (đi theo luồng đọc paper — mỗi điểm khớp 1 mục checklist):**
+
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">1️⃣ §2 — Bài toán gốc: temporal classification = học h biến chuỗi → chuỗi</span>
+
+§2 chỉ làm đúng 1 việc: **đặt toán hình thức cho bài toán**. Hệ ký hiệu (⚠️ quy ước: chữ hoa = *không gian*, chữ thường = *chuỗi cụ thể* — dễ nhầm!):
+
+| Ký hiệu | Trong paper |
+|---|---|
+| $S \sim \mathcal{D}_{X \times Z}$ | tập training examples rút từ phân phối $\mathcal{D}_{X \times Z}$; mỗi example = cặp $(x, z)$ |
+| $\mathcal{X} = (\mathbb{R}^m)^*$ | **input space**: mọi chuỗi vector thực $m$ chiều |
+| $\mathcal{Z} = \mathcal{L}^*$ | **target space**: mọi chuỗi trên alphabet hữu hạn $\mathcal{L}$ |
+| $x = (x_1, \dots, x_T)$ | 1 input sequence, dài $T$ |
+| $z = (z_1, \dots, z_U)$, $U \le T$ | 1 target / labelling, dài $U$ |
+| $h: \mathcal{X} \mapsto \mathcal{Z}$ | **temporal classifier** — hàm cần học, nhận nguyên chuỗi trả nguyên chuỗi |
+
+🌍 **Trong thực tế (repo này), các ký hiệu trên là:**
+
+| Ký hiệu | Trong thực tế (repo này) |
+|---|---|
+| $S$ | **26,255 ảnh thật**: 26,155 ảnh `data/trainset` + 100 ảnh `data/testset` — mỗi ảnh `.jpeg` = 1 example = 1 cặp $(x, z)$, với $z$ lấy từ **tên file** (`dataset.py:44`) |
+| $\mathcal{D}_{X \times Z}$ | "quy luật sinh captcha" — thế giới tất cả captcha kiểu này; thực tế **không có nó**, 26,255 ảnh trên chỉ là 1 mẫu hữu hạn rút ra được |
+| $\mathcal{X} = (\mathbb{R}^m)^*$ | mọi ảnh captcha có thể, sau khi qua CNN: ảnh $32 \times 100$ → chuỗi $T{=}26$ vector **512 chiều** ($m{=}512$; $T = imgW/4 + 1$ — `model.py:20`, `train.py:31`) |
+| $\mathcal{Z} = \mathcal{L}^*$ | mọi chuỗi ghép được từ **38 ký tự** `23456789ABCDEFGHJKLMNPRSTUVWXYZcjsuwxy` (vocab từ tên file — `dataset.py:63-71`); $\mathcal{L}' = \mathcal{L} \cup \{\text{blank}\}$ → `n_class = 39` (`train.py:142`) |
+| $x = (x_1, \dots, x_T)$ | 1 ảnh cụ thể, VD `data/trainset/222HG4.jpeg` → sau CNN: tensor `[T=26, B=1, 512]` (`model.py:62`) |
+| $z = (z_1, \dots, z_U)$ | tên file `"222HG4"` → `char2idx` (`dataset.py:14`) → `tensor([1, 1, 1, 16, 15, 3])`; mọi ảnh trong data đều $U{=}6 \le T{=}26$ ✓ |
+| $h: \mathcal{X} \mapsto \mathcal{Z}$ | `CRNN` (`model.py:5`) + `decode_greedy`/`decode_beam_search` (`src/utils.py:23`) — train xong: $h(\text{ảnh } 222HG4) \approx$ `"222HG4"` là xong việc |
+
+> 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §2 (tr.2) — câu kết §2</span>
+>
+> *"Since the input and target sequences are not generally the same length, there is no a priori way of aligning them."*
+>
+> <span style="color:#777">↳ "no a priori way of aligning them" = data chỉ có cặp (x, z), KHÔNG có cặp (time-step, label) → alignment không tồn tại trong data. Toàn bộ §3–§4 là câu trả lời cho "align kiểu gì khi không ai chỉ?".</span>
+
+↳ Mục tiêu §2: dùng `S` train `h` để classify dữ liệu mới, minimize error measure — thước đo đó là LER eq(1) ở §2.1 (đi sâu ở **B10**).
+↳ Đây là lý do tồn tại của cả paper — câu trả lời "học thế nào" trải dài từ 2️⃣ đến 7️⃣.
+
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">2️⃣ §3.1 — Output per-frame (eq 2): softmax có thêm unit blank</span>
+
+Softmax mỗi time-step → `y_t^k` = P(label k tại t); output `|L|+1` units (thêm blank).
+↳ eq(2) ↔ `log_softmax(2)` tại `src/train.py:53`; `n_class = len(vocab) + 1` tại `src/train.py:142`.
+
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">3️⃣ §3.1 — Path π + map B: nhiều path cùng về 1 label</span>
+
+Path π ∈ `L′^T` (mỗi t chọn 1 ký tự/blank) → B bỏ blank + gộp ký tự lặp: `B(a−ab−) = B(−aa−−abb) = aab`.
+↳ **Nhiều path cùng map về 1 label** — chìa khóa để hiểu vì sao eq(3) phải cộng cả đống path.
+
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">4️⃣ §3.1 — eq(3): cộng tất cả path — không enumerate nổi → cần DP</span>
+
+`p(l|x) = Σ_{B(π)=l} p(π|x)` — số path mũ T, không thể liệt kê → **hai lối thoát**: xấp xỉ khi decode (§3.2) và DP chính xác khi train (§4).
+↳ Đây là điểm nối §3 → §4: cùng một bài toán cộng path, 2 cách giải cho 2 pha.
+
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">5️⃣ §3.2 — Decoding: best path (greedy) vs prefix search (beam)</span>
+
+Best path eq(4): argmax mỗi time-step rồi áp B ↔ `decode_greedy`; prefix search đếm trước các prefix có xác suất cao ↔ `decode_beam_search` + **Fig 2**.
+↳ Best path chỉ là **xấp xỉ**: không tính đến việc nhiều path cùng về 1 label (3️⃣).
+
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">6️⃣ §4.1 — Training: forward–backward trên lattice `l′` (trái tim của paper)</span>
+
+- `l′`: chèn blank đầu/cuối/giữa, len `2|l|+1` ↔ `extended_targets` (`ctc_loss.py:273-279`)
+- Forward α eq(6)–(7): 3 transition stay/move/skip — skip chỉ khi `l′_s ≠ blank` và `l′_s ≠ l′_{s−2}` ↔ skip mask `ctc_loss.py:40-41`
+- eq(8): `p(l|x)` gom từ 2 ô cuối lattice ↔ `logaddexp` tại `ctc_loss.py:294`
+- Backward β eq(9)–(11) ↔ `_compute_beta_matrix` + **Fig 3**
+- **Rescaling `C_t`, `D_t`:** chống underflow ↔ log-domain + `logaddexp` trong code
+
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">7️⃣ §4.2 — Gradient: `α·β` đếm path qua mỗi ô, error signal `y − posterior`</span>
+
+`α_t(s)β_t(s)` = xác suất mọi path qua symbol s tại t; eq(15)–(16) → `∂O/∂u_t^k = y_t^k − posterior` ↔ `backward()` `ctc_loss.py:314`.
+↳ **Fig 4**: error dạng spike, tự triệt tiêu khi hội tụ — hệ quả trực tiếp của eq(16).
 
 > [!IMPORTANT]
 > **Bài tập bắt buộc trước buổi seminar:** tự vẽ lattice "CAT" như Fig 3, chạy tay eq(6)(7) cho 3 time-step đầu. Nếu chạy tay ra được = đã hiểu 80% paper.
@@ -629,9 +690,9 @@ Quy tắc: đi từng bước, nhả chữ mỗi khi (blank→ký tự) hoặc (
 - [ ] §6 đoạn đầu (tr.7): implicit inter-label dependencies
 
 **Key points:**
-- Marginalize latent alignment = biến segmentation thành latent variable; objective differentiable → BPTT chuẩn.
-- Giả định then chốt: outputs **conditionally independent given hidden state** (đảm bảo bằng việc không có feedback từ output layer) — cái giá phải trả, khai thác ở B9.
-- Inter-label dependency vẫn được **implicit** qua BiLSTM (§6).
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Marginalize latent alignment</span> = biến segmentation thành latent variable; objective differentiable → BPTT chuẩn.
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Giả định then chốt:</span> outputs **conditionally independent given hidden state** (đảm bảo bằng việc không có feedback từ output layer) — cái giá phải trả, khai thác ở B9.
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Inter-label dependency</span> vẫn được **implicit** qua BiLSTM (§6).
 
 **✍️ Ghi chú của tôi:**
 
@@ -646,9 +707,9 @@ Quy tắc: đi từng bước, nhả chữ mỗi khi (blank→ký tự) hoặc (
 - [ ] References (tr.8): skim Rabiner 1989 (HMM), Bourlard & Morgan 1994 (hybrid), Schuster & Paliwal 1997 (BRNN), Hochreiter & Schmidhuber 1997 (LSTM), Werbos 1990 (BPTT)
 
 **Key points:**
-- Timeline: HMM (1989) → hybrid HMM-NN (1994) → framewise RNN (2005) → **CTC (2006)** → RNN-T (2012) → seq2seq + attention (2015) → Whisper (2022, không dùng CTC cho decoder).
-- Mỗi bước giải quyết hạn chế nào: HMM giải alignment nhưng generative + hand-crafted; hybrid thêm NN nhưng vẫn khung HMM; CTC bỏ hẳn khung ngoài; attention giải conditional independence nhưng đánh đổi autoregressive (chậm, khó streaming).
-- Timeline sau 2006 là ngoài paper — kiến thức bổ sung cho slide.
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Timeline:</span> HMM (1989) → hybrid HMM-NN (1994) → framewise RNN (2005) → **CTC (2006)** → RNN-T (2012) → seq2seq + attention (2015) → Whisper (2022, không dùng CTC cho decoder).
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Mỗi bước giải quyết hạn chế nào:</span> HMM giải alignment nhưng generative + hand-crafted; hybrid thêm NN nhưng vẫn khung HMM; CTC bỏ hẳn khung ngoài; attention giải conditional independence nhưng đánh đổi autoregressive (chậm, khó streaming).
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Timeline sau 2006 là ngoài paper</span> — kiến thức bổ sung cho slide.
 
 **✍️ Ghi chú của tôi:**
 
@@ -664,9 +725,9 @@ Quy tắc: đi từng bước, nhả chữ mỗi khi (blank→ký tự) hoặc (
 - [ ] §6 đoạn 1–2 (tr.7): điểm khác căn bản của CTC
 
 **Key points:**
-- Bảng tự tổng hợp: framewise / HMM / hybrid / CTC / attention seq2seq (paper không có bảng so sánh lý thuyết — so qua thí nghiệm).
-- Khác biệt căn bản (§6): **không explicit segment**, không model inter-label dependencies, objective chỉ phụ thuộc sequence labels chứ không duration/segmentation.
-- Ưu: end-to-end, decode nhanh, monotonic (hợp OCR/streaming). Nhược: conditional independence, không cắm LM trực tiếp vào objective.
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Bảng tự tổng hợp:</span> framewise / HMM / hybrid / CTC / attention seq2seq (paper không có bảng so sánh lý thuyết — so qua thí nghiệm).
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Khác biệt căn bản (§6):</span> **không explicit segment**, không model inter-label dependencies, objective chỉ phụ thuộc sequence labels chứ không duration/segmentation.
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Ưu:</span> end-to-end, decode nhanh, monotonic (hợp OCR/streaming). <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Nhược:</span> conditional independence, không cắm LM trực tiếp vào objective.
 
 **✍️ Ghi chú của tôi:**
 
@@ -681,9 +742,9 @@ Quy tắc: đi từng bước, nhả chữ mỗi khi (blank→ký tự) hoặc (
 - [ ] §5 intro + §5.2 (tr.6–7): chỗ paper khẳng định "any other architecture could have been used instead"
 
 **Key points:**
-- Algorithm-level (DP forward-backward — dùng cho MỌI architecture) ≠ model-level (BLSTM chỉ là backbone thay được).
-- Training (cần α, β, gradient) ≠ inference (decoding không cần α/β — chỉ cần softmax).
-- `blank=0` trong code là convention; `T` của CRNN = W/4 do pooling stride — quyết định xem label có "vừa" input không.
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Algorithm-level</span> (DP forward-backward — dùng cho MỌI architecture) ≠ <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">model-level</span> (BLSTM chỉ là backbone thay được).
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Training</span> (cần α, β, gradient) ≠ <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">inference</span> (decoding không cần α/β — chỉ cần softmax).
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">`blank=0` trong code là convention</span>; `T` của CRNN = W/4 + 1 do pooling stride + padding — quyết định xem label có "vừa" input không.
 
 **✍️ Ghi chú của tôi:**
 
@@ -699,11 +760,11 @@ Quy tắc: đi từng bước, nhả chữ mỗi khi (blank→ký tự) hoặc (
 - [ ] §6 đoạn cuối (tr.7–8): overfitting, hướng future work
 
 **Key points:**
-- Target dài hơn input cho phép → không path hợp lệ → loss = ∞. **Trong code chính là lý do `zero_infinity=True`** (`src/train.py:146`) — ví dụ sống: T = W/4 = 25 với imgW=100. *(Kiến thức code-level, paper không nói trực tiếp.)*
-- Ký tự lặp trong text (`"AA"`): bắt buộc cần blank giữa 2 ký tự giống nhau.
-- Overfitting: paper tự nhận ML training của CTC khó generalize (§6).
-- Prefix search decode sai khi cắt sai section (§3.2 cuối); output peaked làm beam search thừa thải.
-- Vocab lẫn lowercase (`c j s u w x y`) trong data — risk hoa/thường, chưa xử lý trong code.
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Target dài hơn input cho phép → không path hợp lệ → loss = ∞</span>. **Trong code chính là lý do `zero_infinity=True`** (`src/train.py:146`) — ví dụ sống: T = W/4 + 1 = 26 với imgW=100. *(Kiến thức code-level, paper không nói trực tiếp.)*
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Ký tự lặp trong text (`"AA"`)</span>: bắt buộc cần blank giữa 2 ký tự giống nhau.
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Overfitting:</span> paper tự nhận ML training của CTC khó generalize (§6).
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Prefix search decode sai khi cắt sai section</span> (§3.2 cuối); output peaked làm beam search thừa thải.
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Vocab lẫn lowercase (`c j s u w x y`) trong data</span> — risk hoa/thường, chưa xử lý trong code.
 
 **✍️ Ghi chú của tôi:**
 
@@ -720,10 +781,10 @@ Quy tắc: đi từng bước, nhả chữ mỗi khi (blank→ký tự) hoặc (
 - [ ] Table 1 + §5.3 (tr.7): kết quả
 
 **Key points:**
-- TIMIT, 61 phonemes, metric LER eq(1) = edit distance chuẩn hóa ↔ `full_acc`/`char_acc` trong `src/utils.py:104`.
-- Table 1: HMM ctx-indep 38.85% → ctx-dep 35.21% → hybrid 33.84% → weighted hybrid 31.57% → **CTC best path 31.47%** → **CTC prefix search 30.51%**.
-- Tính fair: cùng BLSTM architecture; hybrid có thêm 183 params HMM + weighted-error heuristic; CTC không cần trick nào.
-- ⚠️ Đây là phoneme labeling (frame-level) chứ không phải full ASR word error — đừng nói quá khi trình bày.
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">TIMIT, 61 phonemes, metric LER eq(1)</span> = edit distance chuẩn hóa ↔ `full_acc`/`char_acc` trong `src/utils.py:104`.
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Table 1:</span> HMM ctx-indep 38.85% → ctx-dep 35.21% → hybrid 33.84% → weighted hybrid 31.57% → **CTC best path 31.47%** → **CTC prefix search 30.51%**.
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Tính fair:</span> cùng BLSTM architecture; hybrid có thêm 183 params HMM + weighted-error heuristic; CTC không cần trick nào.
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">⚠️ Đây là phoneme labeling (frame-level) chứ không phải full ASR word error</span> — đừng nói quá khi trình bày.
 
 **✍️ Ghi chú của tôi:**
 
@@ -737,8 +798,8 @@ Quy tắc: đi từng bước, nhả chữ mỗi khi (blank→ký tự) hoặc (
 - [ ] §6 (tr.7–8): "One very general way of dealing with structured data…" + hierarchical CTC
 
 **Key points:**
-- Nguyên lý transferable: **"khi alignment/latent structure không biết trước, sum over alignments thay vì commit một alignment"**.
-- Cùng họ tư duy: EM, mixture models, soft attention (heatmap α trong notebook 5c chính là posterior over alignments!), marginal likelihood trong Bayesian.
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Nguyên lý transferable:</span> **"khi alignment/latent structure không biết trước, sum over alignments thay vì commit một alignment"**.
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Cùng họ tư duy:</span> EM, mixture models, soft attention (heatmap α trong notebook 5c chính là posterior over alignments!), marginal likelihood trong Bayesian.
 
 **✍️ Ghi chú của tôi:**
 
@@ -753,8 +814,8 @@ Quy tắc: đi từng bước, nhả chữ mỗi khi (blank→ký tự) hoặc (
 - [ ] Fig 2 (tr.4): cấu trúc cây prefix search
 
 **Key points:**
-- Chạy tay sample `"233HP3"` từ `pipeline_deep_dive.ipynb` trên lattice nhỏ: chỉ heatmap α, hỏi khán giả đọc soft-alignment.
-- Hoặc toy `l = "ab"`, T = 5: liệt kê vài path, chỉ blank ở `a−b`, chạy 1 bước recursion α.
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Chạy tay sample `"233HP3"`</span> từ `pipeline_deep_dive.ipynb` trên lattice nhỏ: chỉ heatmap α, hỏi khán giả đọc soft-alignment.
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Hoặc toy `l = "ab"`, T = 5:</span> liệt kê vài path, chỉ blank ở `a−b`, chạy 1 bước recursion α.
 
 **Bài tập của tôi (vẽ lattice vào đây hoặc giấy):**
 
@@ -773,9 +834,9 @@ Quy tắc: đi từng bước, nhả chữ mỗi khi (blank→ký tự) hoặc (
 - [ ] §7 Conclusions (tr.8) — chốt xem có khớp 5 điều dưới đây không
 
 **Key points:**
-- **5 nhớ**: (1) CTC = marginalize mọi alignment qua blank + map B; (2) forward-backward tính `p(l|x)` trong O(T·|l|); (3) gradient `y − posterior` là error signal dạng spike; (4) decoding = best path (greedy) hoặc prefix/beam search; (5) conditional independence là giới hạn cốt lõi.
-- **3 học tiếp**: RNN-T (streaming, không cần blank giữa repeat), seq2seq + attention (bỏ conditional independence), EM/forward-backward tổng quát.
-- **1 câu**: "CTC biến bài toán gán nhãn chuỗi không có alignment thành một bài toán maximum likelihood differentiable bằng cách cộng xác suất trên mọi alignment, cho RNN tự học alignment trong lúc train."
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">5 nhớ:</span> (1) CTC = marginalize mọi alignment qua blank + map B; (2) forward-backward tính `p(l|x)` trong O(T·|l|); (3) gradient `y − posterior` là error signal dạng spike; (4) decoding = best path (greedy) hoặc prefix/beam search; (5) conditional independence là giới hạn cốt lõi.
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">3 học tiếp:</span> RNN-T (streaming, không cần blank giữa repeat), seq2seq + attention (bỏ conditional independence), EM/forward-backward tổng quát.
+- <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">1 câu:</span> "CTC biến bài toán gán nhãn chuỗi không có alignment thành một bài toán maximum likelihood differentiable bằng cách cộng xác suất trên mọi alignment, cho RNN tự học alignment trong lúc train."
 
 **Tự kiểm tra cuối:** đóng paper, tự nói lại trong 1 phút: *what / why / how / khác gì trước / khi nào dùng*. Nói trôi = đạt.
 

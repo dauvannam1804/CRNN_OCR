@@ -130,11 +130,11 @@ Paper 8 trang. Đọc **theo thứ tự B1→B13** (không theo thứ tự trang
 - **Đọc: §3.1 định nghĩa `N_w` (tr.2) + §5 intro & §5.2 (tr.6–7)** — các chỗ paper khẳng định "any other architecture could have been used instead".
 - Algorithm-level (DP forward-backward — dùng được cho MỌI architecture) ≠ model-level (BLSTM chỉ là backbone thay được — paper khẳng định §5).
 - Training (cần α, β, gradient) ≠ inference (decoding không cần α/β — chỉ cần softmax).
-- Hệ quả kiến trúc: `blank=0` trong code là convention; `T` của CRNN = W/4 do pooling stride — quyết định xem label có "vừa" input không (mục 9).
+- Hệ quả kiến trúc: `blank=0` trong code là convention; `T` của CRNN = W/4 + 1 do pooling stride + padding — quyết định xem label có "vừa" input không (mục 9).
 
 ### 9. Failure modes & edge cases
 - **Đọc: §3.2 đoạn cuối (tr.3, prefix search fail case) + §5.2 (tr.7, noise) + §6 đoạn cuối (tr.7–8, overfitting)** — lưu ý loss = ∞ và `zero_infinity` là kiến thức code-level, paper không nói trực tiếp.
-- Target dài hơn input cho phép → không path hợp lệ → loss = ∞. **Trong code chính là lý do `zero_infinity=True`** (`src/train.py:146`) — ví dụ sống: T = W/4 = 25 với imgW=100.
+- Target dài hơn input cho phép → không path hợp lệ → loss = ∞. **Trong code chính là lý do `zero_infinity=True`** (`src/train.py:146`) — ví dụ sống: T = W/4 + 1 = 26 với imgW=100.
 - Ký tự lặp trong text (`"AA"`): bắt buộc cần blank giữa 2 ký tự giống nhau → tìm 1 ảnh captcha có `AA` để demo.
 - Overfitting: paper tự nhận ML training của CTC khó generalize (§6) → họ thêm Gaussian noise σ=0.6 vào input (§5.2).
 - Decode sai khi prefix search cắt sai section (§3.2 cuối); output peaked làm beam search thừa thải.
@@ -202,8 +202,8 @@ Tổng: ~90'. Nếu demo mục 7 hỏng (env/checkpoint lỗi), fallback: play s
 | Bước | Câu hỏi paper trả lời | File:dòng | Shape trước → sau | Điểm dừng hỏi khán giả |
 |---|---|---|---|---|
 | 1. Dữ liệu | Label biểu diễn thế nào? blank nằm đâu? | `dataset.py:13-15, 44-61` | ảnh → `[1,32,100]`; label 6 số; `collate_fn` → labels flat `[Σlen]` + lengths `[B]` | "Vì sao phải reserve index 0 cho blank?" |
-| 2. Ảnh → chuỗi | `N_w` §3.1 là gì? T đến từ đâu? | `model.py:56-66` (pooling stride `(2,1)` dòng 44,48) | `[B,1,32,100]` → CNN `[B,512,1,25]` → permute `[25,B,512]` → BiLSTM → `[25,B,40]` | "T=25, U=6 — alignment đang ở đâu?" (chưa tồn tại!) |
-| 3. Logits → per-step prob | eq(2) | `train.py:53` | `[25,B,40]` → `log_softmax(2)` → `[25,B,40]` | "Đây đã là p(l\|x) chưa?" — chưa, chỉ mới `p(π_t)` từng bước → tạo chỗ hở dẫn sang bước 4 |
+| 2. Ảnh → chuỗi | `N_w` §3.1 là gì? T đến từ đâu? | `model.py:56-66` (pooling stride `(2,1)` dòng 44,48) | `[B,1,32,100]` → CNN `[B,512,1,26]` → permute `[26,B,512]` → BiLSTM → `[26,B,39]` | "T=26, U=6 — alignment đang ở đâu?" (chưa tồn tại!) |
+| 3. Logits → per-step prob | eq(2) | `train.py:53` | `[26,B,39]` → `log_softmax(2)` → `[26,B,39]` | "Đây đã là p(l\|x) chưa?" — chưa, chỉ mới `p(π_t)` từng bước → tạo chỗ hở dẫn sang bước 4 |
 | 4a. `l` → `l′` | §4.1 chèn blank (len `2\|l\|+1`) | `ctc_loss.py:273-279` | target 6 số → 13 states | In `−2−B−2−8−4−7−` lên slide, cho khán giả đếm |
 | 4b. Forward α | eq(5)–(8), skip rule | `ctc_loss.py:6-61` (skip mask dòng 40–41) | `alpha_history [T,B,S]` qua logaddexp stay/move/skip | "Vì sao skip chỉ khi `l′_s ≠ blank` và `≠ l′_{s−2}`?" — quay lại lattice CAT, chỉ 2 case ký tự lặp |
 | 4c. Loss | eq(8), eq(12) | `ctc_loss.py:287-298` | alpha cuối → `logaddexp(α[2L], α[2L−1])` → negate | "Vì sao chỉ cộng đúng 2 ô cuối?" |
