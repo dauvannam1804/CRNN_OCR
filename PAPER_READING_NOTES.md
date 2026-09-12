@@ -32,7 +32,7 @@ Paper 8 trang. Đọc **theo thứ tự B1→B13** (không theo thứ tự trang
 | ☐ | §4.1 + eq(9)–(11) (tr.5) | Backward β, điều kiện biên | B4 |
 | ☐ | §4.1 rescaling `C_t`, `D_t` (tr.5) | Chống underflow; `ln p(l\|x) = Σ ln C_t` | B4 |
 | ☐ | §4.2 + eq(12)–(14) (tr.5–6) | Objective `O_ML`, vai trò `α_t(s)β_t(s) / y_t^{l′_s}` | B4, B5 |
-| ☐ | §4.2 + eq(15)–(16) (tr.6) | Gradient theo `y_t^k` và `u_t^k` (error signal) | B4 |
+| ☐ | §4.2 + eq(15)–(16) (tr.6) | Gradient theo `y^t_k` và `u^t_k` (error signal) | B4 |
 | ☐ | Fig 3 (tr.5) / Fig 2 (tr.4) / Fig 4 (tr.6) | Lattice "CAT" / prefix search tree / evolution of error signal | B4, B12 |
 | ☐ | §5 intro (tr.6) | Thiết kế thí nghiệm: CTC vs HMM vs hybrid, chọn BLSTM | B7, B8 |
 | ☐ | §5.1 Data (tr.6) | TIMIT, 61 phonemes, MFCC, chuẩn hóa | B10 |
@@ -627,9 +627,22 @@ Quy tắc: đi từng bước, nhả chữ mỗi khi (blank→ký tự) hoặc (
 | $\mathcal{D}_{X \times Z}$ | "quy luật sinh captcha" — thế giới tất cả captcha kiểu này; thực tế **không có nó**, 26,255 ảnh trên chỉ là 1 mẫu hữu hạn rút ra được |
 | $\mathcal{X} = (\mathbb{R}^m)^*$ | mọi ảnh captcha có thể, sau khi qua CNN: ảnh $32 \times 100$ → chuỗi $T{=}26$ vector **512 chiều** ($m{=}512$; $T = imgW/4 + 1$ — `model.py:20`, `train.py:31`) |
 | $\mathcal{Z} = \mathcal{L}^*$ | mọi chuỗi ghép được từ **38 ký tự** `23456789ABCDEFGHJKLMNPRSTUVWXYZcjsuwxy` (vocab từ tên file — `dataset.py:63-71`); $\mathcal{L}' = \mathcal{L} \cup \{\text{blank}\}$ → `n_class = 39` (`train.py:142`) |
-| $x = (x_1, \dots, x_T)$ | 1 ảnh cụ thể, VD `data/trainset/222HG4.jpeg` → sau CNN: tensor `[T=26, B=1, 512]` (`model.py:62`) |
+| $x = (x_1, \dots, x_T)$ | ⚠️ **chuỗi feature SAU CNN — KHÔNG phải ảnh thô**: `222HG4.jpeg` ($32 \times 100$) → CNN → tensor `[T=26, B=1, 512]` rồi mới vào RNN (`model.py:58-62`); $B{=}1$ chỉ là batch dim (paper không có). Ảnh thô ≈ raw waveform của speech — đứng NGOÀI formalism (⚠️ sơ đồ dưới bảng) |
 | $z = (z_1, \dots, z_U)$ | tên file `"222HG4"` → `char2idx` (`dataset.py:14`) → `tensor([1, 1, 1, 16, 15, 3])`; mọi ảnh trong data đều $U{=}6 \le T{=}26$ ✓ |
 | $h: \mathcal{X} \mapsto \mathcal{Z}$ | `CRNN` (`model.py:5`) + `decode_greedy`/`decode_beam_search` (`src/utils.py:23`) — train xong: $h(\text{ảnh } 222HG4) \approx$ `"222HG4"` là xong việc |
+
+⚠️ **Phân biệt 3 tầng — $x$ nằm ở đâu?** (đối chiếu code `model.py`):
+
+```
+ảnh thô 222HG4.jpeg (32×100)    ≈ "raw waveform" của speech — NGOÀI formalism §2
+   ↓ CNN (model.py:58)            = bước trích feature — paper KHÔNG có
+                                    (speech có sẵn frame/MFCC; ảnh phải HỌC CNN để nén 2D → 1D)
+x = [T=26, B=1, 512]              ← ĐÚNG x = (x_1,…,x_26) của §2: mỗi x_t ∈ R^512
+   ↓ RNN = N_w (model.py:65)       ← N_w trong paper = đúng phần RNN: m=512 in → n=39 out
+y = [T=26, B=1, 39]               ← y^t_k (softmax per-frame ở 2️⃣)
+```
+
+↳ Nói "CNN đứng ngoài $N_w$" khớp ghi chú B1: *paper = RNN + CTC; CNN chỉ là phần chuẩn bị input của repo*. Câu hỏi "$x$ là ảnh hay feature?" — đáp án: **feature**; ảnh thô chưa phải $x$, phải qua CNN trước đã.
 
 > 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §2 (tr.2) — câu kết §2</span>
 >
@@ -644,11 +657,12 @@ Quy tắc: đi từng bước, nhả chữ mỗi khi (blank→ký tự) hoặc (
 
 Mỗi time-step $t$, network nhả 1 **phân phối xác suất trên bảng chữ cái mở rộng**. ⚠️ Paper chỉ nói *"softmax output layer (Bridle, 1990)"* — **không hiển thị công thức softmax** (đừng tìm eq(2) ở đây!); công thức chuẩn dưới đây là **tôi bổ sung** để đối chiếu code:
 
-$$y_t^k = \frac{\exp(u_t^k)}{\sum_{k'=1}^{|\mathcal{L}'|} \exp(u_t^{k'})}, \qquad k = 1, \dots, |\mathcal{L}'|, \qquad |\mathcal{L}'| = |\mathcal{L}| + 1$$
+$$y^t_k = \frac{\exp(u^t_k)}{\sum_{k'=1}^{|\mathcal{L}'|} \exp(u^t_{k'})}, \qquad k = 1, \dots, |\mathcal{L}'|, \qquad |\mathcal{L}'| = |\mathcal{L}| + 1$$
 
 Đọc công thức:
-- $u_t^k$ — logit "thô" của ký tự $k$ tại time-step $t$ (output của RNN, trước softmax)
-- $y_t^k$ — xác suất ký tự $k$ được nhả tại time-step $t$; mỗi cột $t$ có $\sum_k y_t^k = 1$
+- ⚠️ **Quy ước vị trí chỉ số (theo paper — kiểm chứng bằng render eq(2) trang 2): chỉ số TRÊN = time-step, chỉ số DƯỚI = ký tự/label** — $y^t_k$: $t$ trên (time), $k$ dưới (label). Cảm giác "lệch trực giác" là bình thường — hầu hết tài liệu sau này (Distill 2017, CRNN paper) viết ngược lại kiểu $y_t[k]$!
+- $u^t_k$ — logit "thô" của ký tự $k$ tại time-step $t$ (output của RNN, trước softmax)
+- $y^t_k$ — xác suất ký tự $k$ được nhả tại time-step $t$; mỗi cột $t$ có $\sum_k y^t_k = 1$
 - $\mathcal{L}' = \mathcal{L} \cup \{\text{blank}\}$ — vocab 38 ký tự của repo → softmax ra **39 đầu**, đầu thừa (index 0) chính là blank
 
 ↳ Softmax ↔ `log_softmax(2)` tại `src/train.py:53`; `n_class = len(vocab) + 1` tại `src/train.py:142`.
@@ -657,9 +671,36 @@ $$y_t^k = \frac{\exp(u_t^k)}{\sum_{k'=1}^{|\mathcal{L}'|} \exp(u_t^{k'})}, \qqua
 
 > 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §3.1 (tr.2) — đoạn "More formally…" — định nghĩa hình thức</span>
 >
-> *"More formally, for an input sequence x of length T, define a recurrent neural network with m inputs, n outputs and weight vector w as a continuous map N_w : (R^m)^T ↦ (R^n)^T. Let y = N_w(x) be the sequence of network outputs, and denote by y_t^k the activation of output unit k at time t. Then y_t^k is interpreted as the probability of observing label k at time t, which defines a distribution over the set L′^T of length T sequences over the alphabet L′ = L ∪ {blank}: p(π|x) = ∏_{t=1}^{T} y_t^{π_t}, ∀π ∈ L′^T."* ← **công thức cuối chính là eq(2)**; ngay sau đó: *"From now on, we refer to the elements of L′^T as paths, and denote them π."*
+> *"More formally, for an input sequence $x$ of length $T$, define a recurrent neural network with $m$ inputs, $n$ outputs and weight vector $w$ as a continuous map $N_w : (\mathbb{R}^m)^T \mapsto (\mathbb{R}^n)^T$. Let $y = N_w(x)$ be the sequence of network outputs, and denote by $y^t_k$ the activation of output unit $k$ at time $t$. Then $y^t_k$ is interpreted as the probability of observing label $k$ at time $t$, which defines a distribution over the set $\mathcal{L}'^T$ of length $T$ sequences over the alphabet $\mathcal{L}' = \mathcal{L} \cup \{\text{blank}\}$:"*
 >
-> <span style="color:#777">↳ Đoạn này chứa 3 mảnh: (1) $N_w$ — network là map chuỗi→chuỗi → chi tiết ở **B8**; (2) $y_t^k$ — xác suất label $k$ tại time $t$ → đúng phần softmax ở trên; (3) eq(2) — phân phối trên tập path → mở đường cho 3️⃣–4️⃣.</span>
+> $$p(\pi \mid x) = \prod_{t=1}^{T} y^t_{\pi_t}, \qquad \forall \pi \in \mathcal{L}'^T \qquad \text{(2)}$$
+>
+> *"From now on, we refer to the elements of $\mathcal{L}'^T$ as **paths**, and denote them $\pi$."* ← công thức ở giữa 2 câu này chính là **eq(2)**
+>
+> <span style="color:#777">↳ Đoạn này chứa 3 mảnh: (1) $N_w$ — network là map chuỗi→chuỗi → chi tiết ở **B8**; (2) $y^t_k$ — xác suất label $k$ tại time $t$ → đúng phần softmax ở trên; (3) eq(2) — phân phối trên tập path → mở đường cho 3️⃣–4️⃣.</span>
+
+**🔎 Giải thích chi tiết — từng ký hiệu trong đoạn trên:**
+
+| Ký hiệu | Ý nghĩa | Trong repo này |
+|---|---|---|
+| $N_w$ | bản thân RNN với bộ trọng số $w$ — map **nhận nguyên chuỗi → trả nguyên chuỗi**; "continuous" = trơn theo $w$ → **đạo hàm được** → backprop chạy được | phần RNN của `CRNN` (`src/model.py`) |
+| $m$ | số chiều của **1 time-step đầu vào** | $m = 512$ (vector đặc trưng sau CNN — `model.py:20`) |
+| $(\mathbb{R}^m)^T$ | không gian mọi **chuỗi dài $T$** của vector thực $m$ chiều | input RNN: tensor `[T=26, B, 512]` |
+| $n$ | số unit output mỗi time-step $= \|\mathcal{L}'\|$ | $n = 39$ (`train.py:142`) |
+| $y = N_w(x)$ | chuỗi output: mỗi $t$ một vector $n$ chiều | `logits` `[T, B, C]` từ forward (`train.py:53`) |
+| $y^t_k$ | 1 phần tử — sau softmax: xác suất ký tự $k$ tại time $t$ | `log_softmax(2)` (`train.py:53`) |
+| $\mathcal{L}'^T$ | tập MỌI chuỗi dài đúng $T$ trên 39 ký tự → $39^{26} \approx 10^{41}$ phần tử — mỗi phần tử = 1 path | — |
+| $\pi$ | một path: chuỗi dài $T$ gồm ký tự/blank, VD `− 2 − B − …` | thứ `argmax` từng frame rồi collapse (`utils.py:16-28`) |
+
+**Đọc eq(2):** xác suất của path $\pi$ = **nhân** xác suất từng bước:
+
+$$p(\pi \mid x) = y^1_{\pi_1} \cdot y^2_{\pi_2} \cdots y^T_{\pi_T}$$
+
+- $\pi_t$ — path chọn gì tại bước $t$ (ký tự hoặc blank); $y^t_{\pi_t}$ — xác suất lựa chọn đó, đọc thẳng từ softmax 2️⃣
+- **Nhân được là vì các bước độc lập có điều kiện** — chính là giả định *"Implicit in (2)"*; cái giá phải trả ở **B5**
+- **∀π** — công thức định nghĩa cho **MỌI** path, kể cả path vô nghĩa (`zzz…`); chưa lọc gì cả — việc "path nào đáng tính" là việc của map $\mathcal{B}$ + eq(3) ở 3️⃣–4️⃣
+
+🔢 **Mini:** path $\pi = (-,\, 2,\, B,\, -)$ (4 steps) → $p(\pi \mid x) = y^1_{\text{blank}} \cdot y^2_{2} \cdot y^3_{B} \cdot y^4_{\text{blank}}$ — chỉ cần 4 con số từ bảng softmax, nhân lại là xong.
 
 <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">3️⃣ §3.1 — Path π + map B: nhiều path cùng về 1 label</span>
 
@@ -677,12 +718,12 @@ $$\mathcal{B}(a-ab-) = \mathcal{B}(-aa--abb) = aab$$
 
 Xác suất của **cả chuỗi label** $l$ = cộng xác suất của **mọi path** collapse ra $l$ — đây là eq(3):
 
-$$p(l \mid x) = \sum_{\pi \in \mathcal{B}^{-1}(l)} p(\pi \mid x), \qquad \underbrace{p(\pi \mid x) = \prod_{t=1}^{T} y_{\pi_t}^t}_{\text{eq(2) của paper}}$$
+$$p(l \mid x) = \sum_{\pi \in \mathcal{B}^{-1}(l)} p(\pi \mid x), \qquad \underbrace{p(\pi \mid x) = \prod_{t=1}^{T} y^t_{\pi_t}}_{\text{eq(2) của paper}}$$
 
 Đọc công thức:
 - $\mathcal{B}^{-1}(l)$ — tập **tất cả** path mà $\mathcal{B}$ đưa về đúng $l$ (với $l = $ `"aa"` là 4 path ✓ ở B3-3️⃣)
-- $p(\pi \mid x) = \prod_{t=1}^{T} y_{\pi_t}^t$ — **chính là eq(2)**: xác suất của path = **tích** xác suất từng frame → chỗ giả định independence của 2️⃣ "hiện hình" — **nhân được là vì các time-step độc lập** (vì vậy paper viết *"Implicit in (2)"* ngay sau khi gọi phần tử $\mathcal{L}'^T$ là "paths")
-- $\pi_t$ — ký tự/blank mà path chọn tại bước $t$; $y_{\pi_t}^t$ là xác suất lựa chọn đó, đọc thẳng từ softmax ở 2️⃣
+- $p(\pi \mid x) = \prod_{t=1}^{T} y^t_{\pi_t}$ — **chính là eq(2)**: xác suất của path = **tích** xác suất từng frame → chỗ giả định independence của 2️⃣ "hiện hình" — **nhân được là vì các time-step độc lập** (vì vậy paper viết *"Implicit in (2)"* ngay sau khi gọi phần tử $\mathcal{L}'^T$ là "paths")
+- $\pi_t$ — ký tự/blank mà path chọn tại bước $t$; $y^t_{\pi_t}$ là xác suất lựa chọn đó, đọc thẳng từ softmax ở 2️⃣
 
 Số path mũ $T$ → không liệt kê nổi → **hai lối thoát**: xấp xỉ khi decode (§3.2) và DP chính xác khi train (§4).
 ↳ Đây là điểm nối §3 → §4: cùng một bài toán cộng path, 2 cách giải cho 2 pha.
@@ -702,7 +743,7 @@ Best path eq(4): argmax mỗi time-step rồi áp B ↔ `decode_greedy`; prefix 
 
 <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">7️⃣ §4.2 — Gradient: `α·β` đếm path qua mỗi ô, error signal `y − posterior`</span>
 
-`α_t(s)β_t(s)` = xác suất mọi path qua symbol s tại t; eq(15)–(16) → `∂O/∂u_t^k = y_t^k − posterior` ↔ `backward()` `ctc_loss.py:314`.
+`α_t(s)β_t(s)` = xác suất mọi path qua symbol s tại t; eq(15)–(16) → `∂O/∂u^t_k = y^t_k − posterior` ↔ `backward()` `ctc_loss.py:314`.
 ↳ **Fig 4**: error dạng spike, tự triệt tiêu khi hội tụ — hệ quả trực tiếp của eq(16).
 
 > [!IMPORTANT]
@@ -717,7 +758,7 @@ Best path eq(4): argmax mỗi time-step rồi áp B ↔ `decode_greedy`; prefix 
 <h3>🟥 <span style="background-color:#F8D7DA; color:#721C24; padding:3px 12px; border-radius:6px; border:1px solid #F5C6CB">B5 · WHY IT WORKS</span> <span style="color:#888; font-size:0.85em">— Đọc: câu "Implicit in (2)…" (tr.3) + §4 mở đầu (tr.4) + §6 đoạn đầu (tr.7)</span></h3>
 
 **Checklist đọc:**
-- [ ] Câu "Implicit in (2) is the assumption…" (tr.3) — nằm giữa định nghĩa path π và map B; "(2)" = eq(2) tích path $p(\pi\|x) = \prod y_t^{\pi_t}$, không phải softmax
+- [ ] Câu "Implicit in (2) is the assumption…" (tr.3) — nằm giữa định nghĩa path π và map B; "(2)" = eq(2) tích path $p(\pi\|x) = \prod y^t_{\pi_t}$, không phải softmax
 - [ ] §4 đoạn mở đầu (tr.4): maximum likelihood + BPTT
 - [ ] §6 đoạn đầu (tr.7): implicit inter-label dependencies
 
