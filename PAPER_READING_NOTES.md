@@ -24,7 +24,7 @@ Paper 8 trang. Đọc **theo thứ tự B1→B13** (không theo thứ tự trang
 | ☐ | §1 Introduction (tr.1–2) | Nhược điểm HMM/CRF (3 điểm), hybrid HMM-RNN, ý tưởng CTC, temporal vs framewise | B2, B6 |
 | ☐ | §2 Temporal Classification (tr.2) | Formalism: X, Z, điều kiện U ≤ T, temporal classifier `h` | B4 |
 | ☐ | §2.1 Label Error Rate + eq(1) (tr.2) | LER = edit distance chuẩn hóa | B10 |
-| ☐ | §3.1 + eq(2)(3) (tr.2–3) | Softmax `\|L\|+1` units, blank, path π, giả định independence, map B, `p(l\|x)` | B3, B4, B5 |
+| ☐ | §3.1 + eq(2)(3) (tr.2–3) | Softmax `\|L\|+1` units (⚠️ không đánh số), blank, path π, **eq(2) tích path**, giả định independence, map B, eq(3) `p(l\|x)` | B3, B4, B5, B8 |
 | ☐ | Fig 1 (tr.3) | Framewise vs CTC: spike vs align với segmentation | B2, B3 |
 | ☐ | §3.2 + eq(4) (tr.3) | Decoding: best path, prefix search (Fig 2), heuristic chia section theo blank | B4, B9 |
 | ☐ | §4 intro (tr.4) | Principle of maximum likelihood, BPTT | B5 |
@@ -640,19 +640,51 @@ Quy tắc: đi từng bước, nhả chữ mỗi khi (blank→ký tự) hoặc (
 ↳ Mục tiêu §2: dùng `S` train `h` để classify dữ liệu mới, minimize error measure — thước đo đó là LER eq(1) ở §2.1 (đi sâu ở **B10**).
 ↳ Đây là lý do tồn tại của cả paper — câu trả lời "học thế nào" trải dài từ 2️⃣ đến 7️⃣.
 
-<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">2️⃣ §3.1 — Output per-frame (eq 2): softmax có thêm unit blank</span>
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">2️⃣ §3.1 — Output per-frame: softmax có thêm unit blank</span>
 
-Softmax mỗi time-step → `y_t^k` = P(label k tại t); output `|L|+1` units (thêm blank).
-↳ eq(2) ↔ `log_softmax(2)` tại `src/train.py:53`; `n_class = len(vocab) + 1` tại `src/train.py:142`.
+Mỗi time-step $t$, network nhả 1 **phân phối xác suất trên bảng chữ cái mở rộng**. ⚠️ Paper chỉ nói *"softmax output layer (Bridle, 1990)"* — **không hiển thị công thức softmax** (đừng tìm eq(2) ở đây!); công thức chuẩn dưới đây là **tôi bổ sung** để đối chiếu code:
+
+$$y_t^k = \frac{\exp(u_t^k)}{\sum_{k'=1}^{|\mathcal{L}'|} \exp(u_t^{k'})}, \qquad k = 1, \dots, |\mathcal{L}'|, \qquad |\mathcal{L}'| = |\mathcal{L}| + 1$$
+
+Đọc công thức:
+- $u_t^k$ — logit "thô" của ký tự $k$ tại time-step $t$ (output của RNN, trước softmax)
+- $y_t^k$ — xác suất ký tự $k$ được nhả tại time-step $t$; mỗi cột $t$ có $\sum_k y_t^k = 1$
+- $\mathcal{L}' = \mathcal{L} \cup \{\text{blank}\}$ — vocab 38 ký tự của repo → softmax ra **39 đầu**, đầu thừa (index 0) chính là blank
+
+↳ Softmax ↔ `log_softmax(2)` tại `src/train.py:53`; `n_class = len(vocab) + 1` tại `src/train.py:142`.
+↳ Định nghĩa hình thức $N_w: (\mathbb{R}^m)^T \mapsto (\mathbb{R}^n)^T$ (network = map **chuỗi vector → chuỗi vector**) — nội dung chi tiết ở **B8** (architecture-level: thay backbone được, CTC không quan tâm).
+↳ *"Implicit in (2)"* — eq(2) của paper là công thức **tích path** ở 4️⃣ (KHÔNG phải softmax); giả định independence nói về eq(2) đó → phân tích ở **B5**.
+
+> 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §3.1 (tr.2) — đoạn "More formally…" — định nghĩa hình thức</span>
+>
+> *"More formally, for an input sequence x of length T, define a recurrent neural network with m inputs, n outputs and weight vector w as a continuous map N_w : (R^m)^T ↦ (R^n)^T. Let y = N_w(x) be the sequence of network outputs, and denote by y_t^k the activation of output unit k at time t. Then y_t^k is interpreted as the probability of observing label k at time t, which defines a distribution over the set L′^T of length T sequences over the alphabet L′ = L ∪ {blank}: p(π|x) = ∏_{t=1}^{T} y_t^{π_t}, ∀π ∈ L′^T."* ← **công thức cuối chính là eq(2)**; ngay sau đó: *"From now on, we refer to the elements of L′^T as paths, and denote them π."*
+>
+> <span style="color:#777">↳ Đoạn này chứa 3 mảnh: (1) $N_w$ — network là map chuỗi→chuỗi → chi tiết ở **B8**; (2) $y_t^k$ — xác suất label $k$ tại time $t$ → đúng phần softmax ở trên; (3) eq(2) — phân phối trên tập path → mở đường cho 3️⃣–4️⃣.</span>
 
 <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">3️⃣ §3.1 — Path π + map B: nhiều path cùng về 1 label</span>
 
-Path π ∈ `L′^T` (mỗi t chọn 1 ký tự/blank) → B bỏ blank + gộp ký tự lặp: `B(a−ab−) = B(−aa−−abb) = aab`.
-↳ **Nhiều path cùng map về 1 label** — chìa khóa để hiểu vì sao eq(3) phải cộng cả đống path.
+**Path** $\pi$ — một cách điền nhãn cụ thể vào cả $T$ time-step, mỗi bước chọn 1 ký tự hoặc blank:
+
+$$\pi = (\pi_1, \pi_2, \dots, \pi_T) \in \mathcal{L}'^T$$
+
+**Map $\mathcal{B}$** — quy tắc biến path về chuỗi label cuối: **gộp ký tự lặp liền nhau + bỏ blank**. Ví dụ nguyên văn từ paper:
+
+$$\mathcal{B}(a-ab-) = \mathcal{B}(-aa--abb) = aab$$
+
+↳ **Nhiều path cùng map về 1 label** — chìa khóa để hiểu vì sao eq(3) phải cộng cả đống path. (Toy liệt kê path nào ra `"aa"` ở B3-3️⃣.)
 
 <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">4️⃣ §3.1 — eq(3): cộng tất cả path — không enumerate nổi → cần DP</span>
 
-`p(l|x) = Σ_{B(π)=l} p(π|x)` — số path mũ T, không thể liệt kê → **hai lối thoát**: xấp xỉ khi decode (§3.2) và DP chính xác khi train (§4).
+Xác suất của **cả chuỗi label** $l$ = cộng xác suất của **mọi path** collapse ra $l$ — đây là eq(3):
+
+$$p(l \mid x) = \sum_{\pi \in \mathcal{B}^{-1}(l)} p(\pi \mid x), \qquad \underbrace{p(\pi \mid x) = \prod_{t=1}^{T} y_{\pi_t}^t}_{\text{eq(2) của paper}}$$
+
+Đọc công thức:
+- $\mathcal{B}^{-1}(l)$ — tập **tất cả** path mà $\mathcal{B}$ đưa về đúng $l$ (với $l = $ `"aa"` là 4 path ✓ ở B3-3️⃣)
+- $p(\pi \mid x) = \prod_{t=1}^{T} y_{\pi_t}^t$ — **chính là eq(2)**: xác suất của path = **tích** xác suất từng frame → chỗ giả định independence của 2️⃣ "hiện hình" — **nhân được là vì các time-step độc lập** (vì vậy paper viết *"Implicit in (2)"* ngay sau khi gọi phần tử $\mathcal{L}'^T$ là "paths")
+- $\pi_t$ — ký tự/blank mà path chọn tại bước $t$; $y_{\pi_t}^t$ là xác suất lựa chọn đó, đọc thẳng từ softmax ở 2️⃣
+
+Số path mũ $T$ → không liệt kê nổi → **hai lối thoát**: xấp xỉ khi decode (§3.2) và DP chính xác khi train (§4).
 ↳ Đây là điểm nối §3 → §4: cùng một bài toán cộng path, 2 cách giải cho 2 pha.
 
 <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">5️⃣ §3.2 — Decoding: best path (greedy) vs prefix search (beam)</span>
@@ -685,7 +717,7 @@ Best path eq(4): argmax mỗi time-step rồi áp B ↔ `decode_greedy`; prefix 
 <h3>🟥 <span style="background-color:#F8D7DA; color:#721C24; padding:3px 12px; border-radius:6px; border:1px solid #F5C6CB">B5 · WHY IT WORKS</span> <span style="color:#888; font-size:0.85em">— Đọc: câu "Implicit in (2)…" (tr.3) + §4 mở đầu (tr.4) + §6 đoạn đầu (tr.7)</span></h3>
 
 **Checklist đọc:**
-- [ ] Câu "Implicit in (2) is the assumption…" ngay dưới eq(3) (tr.3)
+- [ ] Câu "Implicit in (2) is the assumption…" (tr.3) — nằm giữa định nghĩa path π và map B; "(2)" = eq(2) tích path $p(\pi\|x) = \prod y_t^{\pi_t}$, không phải softmax
 - [ ] §4 đoạn mở đầu (tr.4): maximum likelihood + BPTT
 - [ ] §6 đoạn đầu (tr.7): implicit inter-label dependencies
 
@@ -782,6 +814,52 @@ Best path eq(4): argmax mỗi time-step rồi áp B ↔ `decode_greedy`; prefix 
 
 **Key points:**
 - <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">TIMIT, 61 phonemes, metric LER eq(1)</span> = edit distance chuẩn hóa ↔ `full_acc`/`char_acc` trong `src/utils.py:104`.
+
+**🔎 Chi tiết metric — LER eq(1) §2.1 (hiểu metric trước khi xem Table 1):**
+
+**Công thức eq(1):**
+
+$$LER(h, S') = \frac{1}{Z}\sum_{(x,z) \in S'} \frac{ED(h(x), z)}{|z|}$$
+
+| Ký hiệu | Ý nghĩa trong paper | Trong repo này |
+|---|---|---|
+| $S' \subset \mathcal{D}_{X \times Z}$ | test set, **disjoint** khỏi tập train $S$ | `data/testset` — 100 ảnh |
+| $Z$ | kích thước test set — ⚠️ paper viết khác, xem ghi chú dưới | 100 mẫu |
+| $h(x)$ | dự đoán chuỗi của classifier (đã qua decode) | output `decode_greedy`/`decode_beam_search` (`src/utils.py:10,33`) |
+| $z$ | ground-truth labelling | tên file, VD `"222HG4"` → `\|z\| = 6` |
+| $ED(p, q)$ | **edit distance** (Levenshtein): số phép **insert / substitute / delete** tối thiểu để biến $p$ thành $q$ | chưa cài thật — `calculate_accuracy` (`src/utils.py:104`) dùng positional match, xấp xỉ LER (⚠️ dưới) |
+
+> 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §2.1 (tr.2)</span>
+>
+> *"…define the label error rate (LER) of a temporal classifier h as the normalised edit distance between its classifications and the targets on S′."*
+>
+> *"…ED(p, q) is the edit distance between the two sequences p and q — i.e. the minimum number of insertions, substitutions and deletions required to change p into q."*
+>
+> *"This is a natural measure for tasks (such as speech or handwriting recognition) where the aim is to minimise the rate of transcription mistakes."*
+>
+> <span style="color:#777">↳ "normalised" = có chia `\|z\|`; 3 phép edit = 3 kiểu lỗi OCR thực tế: **delete** (chữ mờ/rụng), **substitute** (nhầm O↔0, N↔W), **insert** (nhiễu nền thành ký tự thừa).</span>
+
+**🔢 Toy — test set $Z = 5$ captcha, chấm từng mẫu:**
+
+| # | $z$ (đúng, tên file) | $h(x)$ (dự đoán) | Phân tích sai sót | $ED$ | `\|z\|` | $ED/\|z\|$ |
+|---|---|---|---|---|---|---|
+| 1 | `222HG4` | `222HG4` | hoàn hảo | 0 | 6 | 0.000 |
+| 2 | `S3XW8P` | `S3XW8R` | substitute `P→R` | 1 | 6 | 0.167 |
+| 3 | `9M7UEE` | `9M7UE` | delete `E` cuối | 1 | 6 | 0.167 |
+| 4 | `J7cdU2` | `J77dU` | substitute `c→7` + delete `2` | 2 | 6 | 0.333 |
+| 5 | `W4P5NS` | `W4P5NSs` | insert `s` thừa | 1 | 6 | 0.167 |
+
+$$LER = \frac{0 + 0.167 + 0.167 + 0.333 + 0.167}{5} \approx 16.7\%$$
+
+<span style="color:#777">↳ Chuẩn hóa theo `\|z\|`: sai 2 ký tự (mẫu 4) không bị phạt "gấp đôi tuyệt đối" — mỗi mẫu tự cân theo độ dài của nó.</span>
+
+<span style="color:#777">↳ **Phân biệt vai trò:** LER chỉ là thước đo **đánh giá** (test-time, rời rạc, không đạo hàm được); lúc **train** minimize **CTC loss** §4 (differentiable). Đừng nhầm eq(1) với hàm mất mát.</span>
+
+⚠️ **Hai chỗ dễ nói sai khi giảng:**
+
+1. **Định nghĩa $Z$:** paper viết *"Z is the total number of target labels in S′"* (tổng số label) nhưng công thức lại chia $ED/|z|$ từng mẫu trước → mâu thuẫn nhẹ ngay trong paper; các nguồn sau (CRNN — Shi 2015, Distill 2017) hiểu thẳng $Z$ = **số mẫu của test set**. Hệ quả thực tế: 2 cách tính phổ biến — per-sample $\frac{1}{Z}\sum ED_i/|z_i|$ và corpus-level $\sum ED_i / \sum |z_i|$ — cho số **khác nhau nhẹ**; khi so số với implementation khác phải hỏi "LER kiểu nào".
+2. **LER ≠ `char_acc` trong repo:** `calculate_accuracy` (`src/utils.py:104`) match **cứng theo vị trí** rồi chia `len(target)` — chỉ trùng LER khi dự đoán đúng độ dài; có insert/delete thì 1 lỗi ED bị đếm oan thành nhiều mismatch (toàn bộ phần sau bị dồn hàng). LER đúng nghĩa cần Levenshtein DP — *(bài tập: cài bảng DP tính ED, paste vào đây).*
+
 - <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Table 1:</span> HMM ctx-indep 38.85% → ctx-dep 35.21% → hybrid 33.84% → weighted hybrid 31.57% → **CTC best path 31.47%** → **CTC prefix search 30.51%**.
 - <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">Tính fair:</span> cùng BLSTM architecture; hybrid có thêm 183 params HMM + weighted-error heuristic; CTC không cần trick nào.
 - <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">⚠️ Đây là phoneme labeling (frame-level) chứ không phải full ASR word error</span> — đừng nói quá khi trình bày.
