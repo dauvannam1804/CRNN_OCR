@@ -730,8 +730,105 @@ Số path mũ $T$ → không liệt kê nổi → **hai lối thoát**: xấp x�
 
 <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">5️⃣ §3.2 — Decoding: best path (greedy) vs prefix search (beam)</span>
 
-Best path eq(4): argmax mỗi time-step rồi áp B ↔ `decode_greedy`; prefix search đếm trước các prefix có xác suất cao ↔ `decode_beam_search` + **Fig 2**.
-↳ Best path chỉ là **xấp xỉ**: không tính đến việc nhiều path cùng về 1 label (3️⃣).
+🧭 **Mạch của §3.2** (đúng thứ tự paper): eq(4) mục tiêu → nhận xét **khó** → **2 cách xấp xỉ** (🔹 best path · 🔹 prefix search (Fig 2)) → **heuristic** chia section → **fail case**. Đoạn mở đầu gói 3 ý đầu trong 3 câu:
+
+> 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §3.2 (tr.3) — đoạn mở đầu</span>
+>
+> *"Using the terminology of HMMs, we refer to the task of finding this labelling as decoding. Unfortunately, we do not know of a general, tractable decoding algorithm for our system. However the following two approximate methods give good results in practice."*
+>
+> <span style="color:#777">↳ 3 câu = 3 ý: (1) đặt tên — việc tìm labelling eq(4) lúc inference gọi là "decoding", mượn từ HMM; (2) than khó — không có thuật toán exact nhanh; (3) xách ra 2 cách xấp xỉ = best path + prefix search.</span>
+
+**Bước 1 — eq(4): mục tiêu cần "decode"** — chuỗi label có xác suất cao nhất:
+
+$$h(x) = \arg\max_{l \in \mathcal{L}^{\le T}} p(l \mid x) \qquad \text{— eq(4) của paper}$$
+
+Đọc công thức:
+- $\mathcal{L}^{\le T}$ — **tất cả** chuỗi label dài $\le T$. Vì sao số ứng viên **mũ theo $T$**:
+  - đếm từng độ dài: dài 1 → $C$ cách · dài 2 → $C^2$ · … · dài $T$ → $C^T$
+  - tổng: $C^1 + C^2 + \dots + C^T \approx C^T$ → **mỗi +1 time-step = ×C** (nhân, không phải cộng)
+  - ví dụ: alphabet `{a,b}`, T=3 → 2+4+8 = **14 chuỗi**; CRNN thực: $C$ = 38 ký tự (`dataset.py:63-71`), $T$ = 26 (imgW=100) → $38^{26} = 10^{26 \cdot \log_{10}38} \approx 10^{41}$ chuỗi — ~3 triệu tỷ năm liệt kê
+- ⚠️ **Phân biệt 2 không gian** (cùng mũ $T$, khác đối tượng — path = *phương tiện tính*, label = *đáp án cuối*):
+  - path $\pi$: $(C+1)^T$ — 1 cách điền đủ $T$ bước (có blank) = biến ẩn **bên trong model**: softmax **nhân tích** ra xác suất (eq 2), §4 DP cộng khi **train**
+  - label $l$: $\approx C^T$ — chuỗi sau collapse = **đầu ra của cả hệ** (thứ so với ground truth): eq(3) là đích của phép cộng path, eq(4) **argmax** khi decode
+  - cầu nối = map $\mathcal{B}$: nhiều path → 1 label (T=2, vocab `{a,b,-}`: 9 path → 7 label, `"a"` nhận 3 path) ⇒ **train: biết label → tính qua path · decode: chỉ có path → tìm ngược label** (khó → Bước 2)
+- ⚠️ **Đọc cho đúng:** softmax **không liệt kê path** — chỉ nhả, mỗi time-step, 1 phân phối trên symbol (ký tự + blank); xác suất path **tự sinh khi nhân dọc** (eq(2), giả định độc lập — B5) → CRNN có $C^{26}$ path đều có xác suất, không enumerate nổi.
+
+<details>
+<summary>🔢 <b>Toy — 6 con số softmax → 9 path đều có xác suất</b> (vocab <code>{a, b, -}</code>, T=2) — <i>👆 bấm để mở/đóng</i></summary>
+
+```
+softmax chỉ nhả 2 dòng:
+  t=1:  a=.5   b=.3   -=.2
+  t=2:  a=.4   b=.4   -=.2
+
+path    P = tích       collapse
+(a,a)   .5·.4 = .20 →  "a"
+(a,b)   .5·.4 = .20 →  "ab"
+(a,-)   .5·.2 = .10 →  "a"
+(b,a)   .3·.4 = .12 →  "ba"
+(b,b)   .3·.4 = .12 →  "b"
+(b,-)   .3·.2 = .06 →  "b"
+(-,a)   .2·.4 = .08 →  "a"
+(-,b)   .2·.4 = .08 →  "b"
+(-,-)   .2·.2 = .04 →  ""     (rỗng)
+                        ─────
+        tổng      = 1.00 ✓  (mọi path chia nhau hết 100%)
+```
+
+</details>
+
+- **"Decoding" mượn từ HMM** — cấu trúc bài toán tương đồng:
+
+| | HMM | CTC |
+|---|---|---|
+| Chuỗi ẩn | state sequence | path $\pi$ (alignment) |
+| Quan sát | audio frames | input $x$ |
+| Xác suất từng bước | emission prob $b_j(o_t)$ | softmax $y^t_k$ |
+| Decoding = | tìm state sequence tốt nhất → **Viterbi** (exact, đa thức) | tìm **labelling** tốt nhất → ❗KHÔNG có "Viterbi tương đương" |
+
+↳ Sau này đọc "CTC decoder" trong tài liệu OCR/speech — nguồn gốc từ đây.
+
+- **Vì sao intractable:** tính $p(l \mid x)$ cho **1 label** thì DP nhanh được (forward-backward §4 — thứ dùng khi train); **KHÓ nằm ở argmax trên MỌI label** (số lượng mũ $T$). CTC **có** Viterbi — nhưng cho **path**, không cho **label**: mỗi label là 1 **lớp tương đương** gộp từ nhiều path, không DP trực tiếp được. Chữ "**general**" = hedge: chưa ai biết thuật toán nhanh tổng quát, paper không khẳng định không tồn tại.
+
+**Bước 2 — Hai cách xấp xỉ** (paper: *"the following two approximate methods"* — 2 phương án song song, không phải 2 bước nối tiếp):
+
+**🔹 Cách 1 — best path decoding** ↔ `decode_greedy`
+
+Giả định labelling tốt nhất đến từ path tốt nhất:
+
+$$h(x) = \mathcal{B}(\pi^*), \qquad \pi^* = \arg\max_{\pi \in \mathcal{L}'^T} p(\pi \mid x)$$
+
+Đọc công thức:
+- $\pi^*$ — path đỉnh: argmax **từng time-step** rồi áp $\mathcal{B}$ — nhanh $O(T)$, nhưng ↳ **chỉ là xấp xỉ** (nhiều path cùng về 1 label — 3️⃣):
+
+🔢 **Toy — argmax-path ≠ argmax-label:**
+
+```
+softmax y:  t1: -=.42 a=.40 b=.18   t2: -=.42 a=.40 b=.18   t3: -=.30 a=.10 b=.60
+
+Best path (argmax TỪNG bước): (-,-,b) = .42·.42·.60 ≈ .106 → collapse ra "b"
+                                                     ⇒ best path decoding trả về "b"
+
+Nhưng cộng ĐỦ path:
+  p("b")  ≈ .27   (7 path: (b,-,-)(b,-,b)(b,b,-)(b,b,b)(-,b,-)(-,b,b)(-,-,b))
+  p("ab") ≈ .36   (5 path: (a,-,b)+(-,a,b)+(a,a,b)+(a,b,b)+(a,b,-))
+                        ⇒ argmax THẬT là "ab" — thắng nhờ CỘNG dồn nhiều path vừa
+```
+
+→ **Path đỉnh không chắc thuộc label đỉnh**: 1 path cao điểm thua TỔNG của nhiều path vừa — cái giá "tha phép cộng" của best path decoding.
+
+**🔹 Cách 2 — prefix search decoding** ↔ `decode_beam_search` (bản xấp xỉ)
+
+- Cộng **đúng** path nhưng khôn ngoan: đếm theo **prefix** trên cây tìm kiếm (branch-and-bound) — dừng khi 1 labelling có xác suất > mọi prefix còn lại (**Fig 2**).
+- **Exact** nhưng **exponential** tệ nhất ↔ `decode_beam_search` chỉ là bản **cắt tỉa** theo `beam_width` — không exact.
+
+**Heuristic chia section + kết luận (đoạn cuối §3.2 — gắn với Cách 2)**
+
+- CTC output dạng **spike + blank** (Fig 1) → cắt output tại chỗ **P(blank) > threshold** → decode **từng section** → **nối** lại — giúp prefix search khả thi trong thực tế.
+- Kết luận paper: *"prefix search works well with this heuristic, and generally outperforms best path decoding"* (khớp Table 1 ở B10: 31.47% → 30.51%).
+- **Fail case:** cùng 1 label bị dự đoán **yếu ở cả 2 bên** biên section → cắt sai — chi tiết ở B9.
+
+↳ **Mạch 2 pha chốt lại:** **train** = §4 (DP exact tính loss) · **test** = §3.2 (decode xấp xỉ) — 2 pha, 2 thuật toán, chung 1 bài toán cộng path.
 
 <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">6️⃣ §4.1 — Training: forward–backward trên lattice `l′` (trái tim của paper)</span>
 
