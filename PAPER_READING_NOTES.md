@@ -750,7 +750,9 @@ $$h(x) = \arg\max_{l \in \mathcal{L}^{\le T}} p(l \mid x) \qquad \text{— eq(4)
 - ⚠️ **Phân biệt 2 không gian** (cùng mũ $T$, khác đối tượng — path = *phương tiện tính*, label = *đáp án cuối*):
   - path $\pi$: $(C+1)^T$ — 1 cách điền đủ $T$ bước (có blank) = biến ẩn **bên trong model**: softmax **nhân tích** ra xác suất (eq 2), §4 DP cộng khi **train**
   - label $l$: $\approx C^T$ — chuỗi sau collapse = **đầu ra của cả hệ** (thứ so với ground truth): eq(3) là đích của phép cộng path, eq(4) **argmax** khi decode
-  - cầu nối = map $\mathcal{B}$: nhiều path → 1 label (T=2, vocab `{a,b,-}`: 9 path → 7 label, `"a"` nhận 3 path) ⇒ **train: biết label → tính qua path · decode: chỉ có path → tìm ngược label** (khó → Bước 2)
+  - cầu nối = map $\mathcal{B}$: nhiều path → 1 label (T=2, vocab `{a,b,-}`: 9 path → chỉ **5** label khác nhau, `"a"` nhận 3 path) ⇒ **train: biết label → tính qua path · decode: chỉ có path → tìm ngược label** (khó → Bước 2)
+    - vì sao 9 path ra 5 label (chứ không phải 9 hay 7): có **7** label khả dĩ dài ≤ 2 (`""`, `a`, `b`, `aa`, `ab`, `ba`, `bb` — đếm $1 + 2 + 4$) nhưng collapse **gộp ký tự lặp liền nhau rồi xả blank** nên `aa`/`bb` **không bao giờ sinh ra** — `(a,a)`→`"a"`, `(a,-)`→`"a"`, `(-,a)`→`"a"` ⇒ `"a"` nhận 3 path, `"b"` nhận 3, `"ab"`/`"ba"`/`""` mỗi cái 1 → 3+3+1+1+1 = 9 ✓
+    - vì sao decode "khó → Bước 2": **train** có sẵn ground-truth label `z` → chỉ cần **tổng 1 lớp path** (mọi path collapse về đúng `z`) — forward-backward §4 cộng gộp không cần liệt kê → **đa thức, dễ** (toy: $p(\text{"a"})$ = .20+.10+.08 = .38). **Decode** thì **không có label cho trước** — model chỉ nhả xác suất path → muốn đúng eq(4) phải argmax trên **MỌI label** ($\approx C^T$ ứng viên): tổng cho *1* label DP được, nhưng tính cho *tất cả* rồi so sánh thì liệt kê $38^{26}$ ứng viên không nổi; hơn nữa **tổng theo lớp phá cấu trúc từng time-step** ⇒ Viterbi (chạy tốt trên path) không chạy trực tiếp trên label. Bẫy thêm: **best path ≠ best label** — toy dưới: path cao nhất `(a,a)`/`(a,b)` = .20, nhưng `"a"` gộp 3 path = .38 mới là label cao nhất; greedy theo path lầm có thể dừng ở `"ab"`=.20. ⇒ paper: *"we do not know of a general, tractable decoding algorithm"* → đành **xấp xỉ** bằng 2 cách = best path + prefix search → chính là **Bước 2** dưới đây.
 - ⚠️ **Đọc cho đúng:** softmax **không liệt kê path** — chỉ nhả, mỗi time-step, 1 phân phối trên symbol (ký tự + blank); xác suất path **tự sinh khi nhân dọc** (eq(2), giả định độc lập — B5) → CRNN có $C^{26}$ path đều có xác suất, không enumerate nổi.
 
 <details>
@@ -796,35 +798,184 @@ path    P = tích       collapse
 
 Giả định labelling tốt nhất đến từ path tốt nhất:
 
-$$h(x) = \mathcal{B}(\pi^*), \qquad \pi^* = \arg\max_{\pi \in \mathcal{L}'^T} p(\pi \mid x)$$
+$$h(x) ≈ \mathcal{B}(\pi^*), \qquad \pi^* = \arg\max_{\pi \in \mathcal{L}'^T} p(\pi \mid x)$$
 
 Đọc công thức:
 - $\pi^*$ — path đỉnh: argmax **từng time-step** rồi áp $\mathcal{B}$ — nhanh $O(T)$, nhưng ↳ **chỉ là xấp xỉ** (nhiều path cùng về 1 label — 3️⃣):
 
-🔢 **Toy — argmax-path ≠ argmax-label:**
+🔢 **Toy — argmax-path ≠ argmax-label** (T=3, vocab `{a,b,-}`, mỗi dòng softmax tổng = 1):
 
 ```
-softmax y:  t1: -=.42 a=.40 b=.18   t2: -=.42 a=.40 b=.18   t3: -=.30 a=.10 b=.60
+softmax y:   t1: -=.42  a=.40  b=.18
+             t2: -=.42  a=.40  b=.18
+             t3: -=.30  a=.10  b=.60
 
-Best path (argmax TỪNG bước): (-,-,b) = .42·.42·.60 ≈ .106 → collapse ra "b"
-                                                     ⇒ best path decoding trả về "b"
+❌ Best path decoding — argmax TỪNG bước → chỉ 1 path duy nhất:
+   path đỉnh :  (-,-,b) = .42 · .42 · .60 ≈ .106
+   collapse  :  B((-,-,b)) = "b"          ⇒ decode trả về "b"
 
-Nhưng cộng ĐỦ path:
-  p("b")  ≈ .27   (7 path: (b,-,-)(b,-,b)(b,b,-)(b,b,b)(-,b,-)(-,b,b)(-,-,b))
-  p("ab") ≈ .36   (5 path: (a,-,b)+(-,a,b)+(a,a,b)+(a,b,b)+(a,b,-))
-                        ⇒ argmax THẬT là "ab" — thắng nhờ CỘNG dồn nhiều path vừa
+✅ Định nghĩa thật (eq 3) — cộng ĐỦ path cùng label:
+   p("b")  ≈ .23  ← 6 path: (b,-,-) (b,b,-) (b,b,b) (-,b,-) (-,b,b) (-,-,b)
+   p("ab") ≈ .36  ← 5 path: (a,-,b) (-,a,b) (a,a,b) (a,b,b) (a,b,-)
+                  ⇒ argmax THẬT là "ab" — thắng nhờ CỘNG dồn nhiều path "vừa"
+
+   xếp hạng :  .106 (path đỉnh — thuộc "b")  <  .23 ("b" đủ 6 path)  <  .36 ("ab" đủ 5 path)
+               └ path đỉnh toàn cục ĐÚNG thuộc "b"… mà "b" vẫn thua — "ab" gộp được nhiều path hơn
+
+   ⚠️ bẫy liệt kê: (b,-,b) KHÔNG thuộc p("b") — blank chặn 2 b-run → collapse ra "bb" (B3-3️⃣)
 ```
 
 → **Path đỉnh không chắc thuộc label đỉnh**: 1 path cao điểm thua TỔNG của nhiều path vừa — cái giá "tha phép cộng" của best path decoding.
 
 **🔹 Cách 2 — prefix search decoding** ↔ `decode_beam_search` (bản xấp xỉ)
 
-- Cộng **đúng** path nhưng khôn ngoan: đếm theo **prefix** trên cây tìm kiếm (branch-and-bound) — dừng khi 1 labelling có xác suất > mọi prefix còn lại (**Fig 2**).
-- **Exact** nhưng **exponential** tệ nhất ↔ `decode_beam_search` chỉ là bản **cắt tỉa** theo `beam_width` — không exact.
+Cộng **đúng** path nhưng khôn ngoan: đếm theo **prefix** trên **cây tìm kiếm** (branch-and-bound) — mỗi vòng chỉ mở rộng prefix **hứa hẹn nhất còn lại**, **dừng sớm** khi 1 labelling hoàn chỉnh đã có xác suất **> mọi prefix còn lại**. **Exact** ✓ nhưng exponential tệ nhất ↔ `decode_beam_search` là bản **cắt tỉa** theo `beam_width` — không exact.
+
+> 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §3.2 (tr.3) — đoạn Cách 2 (ngay sau câu giới thiệu Fig 2)</span>
+>
+> *"The second method (prefix search decoding) relies on the fact that, by modifying the forward-backward algorithm of section 4.1, we can efficiently calculate the probabilities of successive extensions of labelling prefixes (figure 2). Given enough time, prefix search decoding always finds the most probable labelling. However, the maximum number of prefixes it must expand grows exponentially with the input sequence length. If the output distribution is sufficiently peaked around the mode, it will nonetheless finish in reasonable time. For the experiment in this paper though, a further heuristic was required to make its application feasible."*
+>
+> <span style="color:#777">↳ khớp 1-1: câu 1 = nguồn của số trên node Fig 2 (forward-backward biến thể §4.1 tính xác suất các prefix mở rộng) · câu 2 = Exact ✓ — đủ thời gian luôn ra labelling xác suất cao nhất · câu 3 = số prefix phải mở rộng mũ theo độ dài chuỗi · câu 4 = output peaked (spike sắc, Fig 1) thì vẫn xong nhanh · câu 5 = câu chuyển tiếp → heuristic chia section (mục dưới).</span>
+
+![Fig 2 — Prefix search decoding trên alphabet {X, Y}](images/Fig2.png)
+
+**🌍 Bảng dịch caption Fig 2 — từng câu một:**
+
+| # | Câu gốc (EN) | Dịch (VI) | 🧭 Ghi chú |
+|---|--------------|-----------|------------|
+| 1 | *Figure 2. Prefix search decoding on the label alphabet X,Y.* | Hình 2. Prefix search decoding trên bộ label alphabet X, Y. | Cây tìm kiếm trên **prefix** — mỗi nhánh = 1 cách kéo dài prefix hiện tại thêm 1 ký tự. |
+| 2 | *Each node either ends ('e') or extends the prefix at its parent node.* | Mỗi node hoặc **kết thúc** ('e') hoặc **mở rộng** prefix của node cha. | 2 loại node: node ký tự (X, Y) = thêm 1 chữ vào prefix; node `e` = **chốt** — nhận đúng prefix của cha làm 1 labelling hoàn chỉnh. |
+| 3 | *The number above an extending node is the total probability of all labellings beginning with that prefix.* | Số trên node mở rộng = **tổng** xác suất của **mọi** labelling bắt đầu bằng prefix đó. | ⭐ Chỗ "cộng đúng": node `X` = 0.7 không phải 1 path — là **TỔNG** cả lớp path bắt đầu bằng `X` (cùng cơ chế cộng dồn đã thắng ở toy Cách 1). |
+| 4 | *The number above an end node is the probability of the single labelling ending at its parent.* | Số trên node kết thúc = xác suất của **duy nhất 1** labelling kết thúc tại cha nó. | Node `e` chốt 1 labelling cụ thể (vd `"X"` = 0.1) — tách phần **"dừng tại đây"** khỏi tổng của cha (`XY` .5 = `"XY"` .3 + `XYX` .1 + `XYY` .1); đây là **điểm số ứng viên hoàn chỉnh** — đầu vào của điều kiện dừng ở câu 6. |
+| 5 | *At every iteration the extensions of the most probable remaining prefix are explored.* | Mỗi vòng lặp chỉ mở rộng prefix **có xác suất cao nhất** trong các prefix còn lại. | Branch-and-bound: luôn đào nhánh hứa hẹn nhất trước — không phí sức vào nhánh kém. |
+| 6 | *Search ends when a single labelling (here 'XY') is more probable than any remaining prefix.* | Dừng khi 1 labelling đơn (ở đây `'XY'`) có xác suất **> mọi prefix còn lại**. | ⭐ Điều kiện dừng: mọi labelling chưa khám phá đều phải đi qua 1 prefix còn lại → prefix cao nhất còn lại = **trần xác suất** của cả lớp còn lại → không gì vượt được labelling hiện tại.<br>**🔢 Ví dụ từ Fig 2 — điểm dừng sau vòng 3:** vừa chốt `"XY"` = 0.3; prefix còn lại: `Y`=0.2 · `XX`=0.1 · `XYX`=0.1 · `XYY`=0.1 → trần cao nhất = **0.2**.<br>Mọi labelling chưa khám phá đều "nằm dưới" 1 prefix nào đó: dưới `Y` → `"Y"`, `"YY"`, `"YX"`… ≤ 0.2 · dưới `XX` → `"XX…"` ≤ 0.1 · dưới `XYX`/`XYY` → `"XYX…"/"XYY…"` ≤ 0.1.<br>⇒ **0.3 > 0.2** → không ứng viên nào còn khả năng thắng `"XY"` → DỪNG, trả về `"XY"` (cây con của `Y` không cần đào nữa — chỗ **dừng sớm tiết kiệm** của prefix search so với quét hết cây). |
+
+**🎨 Đọc hình — cây prefix của Fig 2 (số trên node = tổng p của cả lớp; `e` = chốt):**
+
+```
+                                ┌───────┐
+                                │  (-)  │ 1.0        ← gốc: prefix rỗng
+                                └───┬───┘
+                  ┌─────────────────┼─────────────────┐
+                0.7▼             0.2▼             0.1▼
+               ┌─────┐           ┌─────┐           ┌─────┐
+               │ (X) │           │ (Y) │           │ (e) │→ chốt: labelling ""   = 0.1
+               └──┬──┘           └─────┘           └─────┘
+        ┌─────────┼─────────┐
+      0.1 ▼     0.5 ▼     0.1 ▼
+     ┌─────┐   ┌─────┐   ┌─────┐
+     │ (X) │   │ (Y) │   │ (e) │→ chốt: labelling "X"   = 0.1
+     └─────┘   └──┬──┘   └─────┘
+          ┌───────┼───────┐
+        0.1 ▼   0.1 ▼   0.3 ▼
+       ┌─────┐ ┌─────┐ ┌─────┐
+       │ (X) │ │ (Y) │ │ (e) │→ chốt: labelling "XY"  = 0.3  ⭐ DỪNG Ở ĐÂY
+       └─────┘ └─────┘ └─────┘
+                  (cây in đậm trong figure = đường đi - → X → Y → e; (Y) mức 1 chưa kịp mở rộng)
+```
+
+📏 **Độ cao cây ↔ độ dài label** (đi xuống 1 cấp = thêm đúng **1 ký tự** vào prefix):
+
+| Cấp (độ sâu) | Node mở rộng = prefix dài | Node `e` = labelling dài |
+|---|---|---|
+| 0 (gốc) | `−` → **0** ký tự | — |
+| 1 | `X`, `Y` → **1** ký tự | `e""` → **0** ký tự |
+| 2 | `XX`, `XY` → **2** ký tự | `e"X"` → **1** ký tự |
+| 3 | `XYX`, `XYY` → **3** ký tự | `e"XY"` → **2** ký tự ⭐ |
+
+↳ Quy tắc: node mở rộng ở cấp $d$ = prefix dài $d$ ký tự; node `e` dưới nó chốt labelling **bằng đúng prefix của cha** → dài $d-1$ (ví dụ `e` ở cấp 3 chốt `"XY"` dài 2). Cây sâu tối đa = $T$: labelling không thể dài hơn số time-step — sâu hơn T thì mọi node chỉ còn cách chốt (`e`).
+
+🔢 **Vì sao "số prefix phải mở rộng mũ theo độ dài chuỗi"? — đếm trực tiếp trên cây:**
+
+```
+Mỗi node mở rộng sinh ra đúng C node mở rộng mới (C = số ký tự; Fig 2 có C = 2)
+⇒ số prefix ở cấp d = C^d:
+
+   cấp 1:  X, Y                 = 2    = 2¹
+   cấp 2:  XX XY YX YY          = 4    = 2²
+   cấp 3:  XXX XXY XYX XYY …    = 8    = 2³
+   cấp d:                                    C^d   ← mỗi +1 cấp = ×C (NHÂN, không phải cộng)
+
+   tổng prefix dài ≤ T  ≈  C^T   → "maximum number of prefixes" mũ theo độ dài chuỗi
+
+   Fig 2  (C=2, T=3) :  2³ = 8          — nhỏ, vẽ tay được
+   CRNN   (C=38, T=26):  38²⁶ ≈ 10⁴¹    — không bao giờ quét nổi (≈ con số
+                          labelling ở Bước 1 — vì prefix dài T ≈ labelling dài T)
+```
+
+↳ Chữ "**maximum**" là chặn trên xấu nhất: best-first thường mở **ít hơn nhiều** — output peaked (spike sắc, Fig 1) thì vài vòng đã dừng (câu 4 của quote). Nhưng để **bảo đảm** khả thi cho mọi case, paper mới cần heuristic chia section (mục dưới); còn `decode_beam_search` chặn cứng bằng cách giữ top `beam_width` prefix mỗi bước → chi phí `beam_width × T`, không còn mũ.
+
+**📖 Chạy tay 3 vòng lặp trên đúng cây này:**
+
+| Vòng | Prefix tốt nhất còn lại | Mở rộng ra | Xếp hạng sau vòng (top) |
+|-----|------------------------|------------|--------------------------|
+| 1 | prefix `-` = 1.0 | `X`=0.7 · `Y`=0.2 · `""`=0.1 | `X` .7 ▶ · `Y` .2 · `""` .1 |
+| 2 | prefix `X` = 0.7 | `XX`=0.1 · `XY`=0.5 · `"X"`=0.1 | `XY` .5 ▶ · `Y` .2 · `XX` .1 = `"X"` .1 |
+| 3 | prefix `XY` = 0.5 | `XYX`=0.1 · `XYY`=0.1 · `"XY"`=0.3 | **labelling `"XY"` .3** ⭐ · `Y` .2 · `XYX`=`XYY`=`XX`=.1 |
+
+Kiểm tra điều kiện dừng (vòng 3): `"XY"` = 0.3 **>** prefix tốt nhất còn lại `Y` = 0.2
+→ mọi labelling chưa khám phá đều là "con" của 1 prefix ≤ 0.2 → **không thể thắng `"XY"`** → DỪNG, trả về `"XY"`.
 
 **Heuristic chia section + kết luận (đoạn cuối §3.2 — gắn với Cách 2)**
 
-- CTC output dạng **spike + blank** (Fig 1) → cắt output tại chỗ **P(blank) > threshold** → decode **từng section** → **nối** lại — giúp prefix search khả thi trong thực tế.
+> 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §3.2 (tr.3) — đoạn cuối, heuristic chia section</span>
+>
+> *"Observing that the outputs of a trained CTC network tend to form a series of spikes separated by strongly predicted blanks (figure 1), we divide the output sequence into sections that are very likely to begin and end with a blank. We do this by choosing boundary points where the probability of observing a blank label is above a certain threshold. We then calculate the most probable labelling for each section individually and concatenate these to get the final classification. In practice, prefix search works well with this heuristic, and generally outperforms best path decoding. However it does fail in some cases, e.g. if the same label is predicted weakly on both sides of a section boundary."*
+>
+> <span style="color:#777">↳ khớp 1-1 với 3 bullet dưới: câu 1–2 = spike + blank → cắt tại P(blank) &gt; threshold · câu 3 = decode từng section + nối · câu 4 = kết luận prefix search thắng best path (Table 1, B10) · câu 5 = fail case (B9).</span>
+
+**🌍 Bảng dịch đoạn heuristic — từng câu một:**
+
+| # | Câu gốc (EN) | Dịch (VI) | 🧭 Ghi chú |
+|---|--------------|-----------|------------|
+| 1 | *Observing that the outputs of a trained CTC network tend to form a series of spikes separated by strongly predicted blanks (figure 1),* | Nhận thấy output của mạng CTC đã train có xu hướng tạo thành **loạt spike cách nhau bởi blank được dự đoán rất mạnh** (figure 1), | Tiền đề = quan sát thực nghiệm từ Fig 1: spike nhả ký tự, blank ≈ 1 ở khoảng giữa — cấu trúc "đề cho sẵn" để khai thác. |
+| 2 | *we divide the output sequence into sections that are very likely to begin and end with a blank.* | ta chia chuỗi output thành các **section** rất có thể **bắt đầu và kết thúc bằng blank**. | Section = đoạn giữa 2 điểm biên.<br>**Vì sao 2 đầu blank ⇒ không cắt giữa ký tự:** spike = frame nhả ký tự (P(blank) ≈ 0); biên được chọn tại P(blank) &gt; threshold → biên **chỉ có thể rơi vào frame "im lặng"**, không bao giờ trúng spike.<br>**"Mỗi spike nằm trọn trong 1 section" để làm gì:** mọi frame của 1 lần nhả ký tự thuộc CÙNG 1 section → section decode ra ký tự **nguyên vẹn** → nối section = nối ký tự đúng thứ tự — điều kiện để "decode riêng + nối" ra kết quả đúng.<br>🔢 Cắt sai (giữa spike, P(blank) = .12): trái đọc `"…a"` · phải đọc `"a…"` → cùng 1 lần nhả 'a' bị chia đôi → nối ra `"aa"` ✗ (đúng ra `"a"`). |
+| 3 | *We do this by choosing boundary points where the probability of observing a blank label is above a certain threshold.* | Chọn **điểm biên** = chỗ **P(blank) vượt ngưỡng** (threshold). | Tiêu chí cắt rất rẻ: chỉ cần đọc P(blank) từng frame — chỗ network "chắc chắn im lặng" là chỗ cắt an toàn. |
+| 4 | *We then calculate the most probable labelling for each section individually and concatenate these to get the final classification.* | Rồi tính labelling xác suất cao nhất **từng section riêng lẻ** và **nối** lại thành kết quả cuối. | Ghi chú này có 2 ý: **(a) vì sao NỐI được — (b) vì sao NHANH.**<br>**(a) Nối được vì biên là blank:** blank chặn merge (B3: `l − l` → `ll`) → $\mathcal{B}(\pi_1 + \text{blank} + \pi_2) = \mathcal{B}(\pi_1) + \mathcal{B}(\pi_2)$ → labelling cả chuỗi = **nối** labelling các section; spike nằm trọn 1 phía biên — không ký tự nào bị vắt qua.<br>**(b) Nhanh vì chi phí mũ theo độ dài đoạn tìm:** nguyên chuỗi → $C^T$; chia section → $C^{l_1} + C^{l_2} + \dots$ (tổng độ dài vẫn = $T$ nhưng **mũ nhỏ hơn**). Trực giác: $2^{10} = 1024$ mà $2^5 + 2^5 = 64$ — chỉ cần chia đôi là giảm ~16 lần.<br>Số thật CRNN ($C{=}38$): nguyên chuỗi $38^{26} \approx 10^{41}$ (bất khả thi) · 9 section dài 3: $9 \times 38^3 \approx 5 \times 10^5$ (xong ngay).<br>⇒ đúng nghĩa *"exponential tệ nhất trở nên khả thi"*. |
+| 5 | *In practice, prefix search works well with this heuristic, and generally outperforms best path decoding.* | Trên thực tế prefix search **hoạt động tốt với heuristic này** và nhìn chung **vượt best path decoding**. | Kết luận chính thức của paper — khớp số Table 1 (B10): LER **31.47% → 30.51%**. |
+| 6 | *However it does fail in some cases, e.g. if the same label is predicted weakly on both sides of a section boundary.* | Tuy nhiên vẫn fail vài case: khi **cùng 1 label bị dự đoán YẾU ở cả 2 bên** điểm biên section. | ⭐ Fail case: P(blank) vượt ngưỡng (cắt "đúng" theo tiêu chí) nhưng label mơ hồ bị chia đôi → mỗi section giữ 1 mảnh → decode sai. Chi tiết ở B9. |
+
+🔢 **Ví dụ cho TỪNG ý của ghi chú hàng 2** — chuỗi `"ab"`, 10 time-step, threshold = .9:
+
+```
+ t       :   1    2    3    4    5    6    7    8    9    10
+ argmax  :   −    −    a    a    −    −    b    b    −    −
+ P(blank):  .97  .98  .04  .05  .96  .97  .03  .04  .97  .98
+
+ Ý 1 — "Section = đoạn giữa 2 điểm biên":
+    biên chọn tại t2 (.98) và t6 (.97) → section 2 = t2→t6  (đoạn giữa 2 biên)
+
+ Ý 2 — "2 đầu blank ⇒ không cắt giữa ký tự":
+    2 đầu section 2 là t2, t6 — đều P(blank) ≈ 1 (frame im lặng)
+    spike 'a' ở t3–t4 có P(blank) ≈ 0 → biên KHÔNG THỂ rơi vào t3/t4
+
+ Ý 3 — "Spike nằm trọn trong section" để làm gì:
+    spike 'a' (t3–t4) nằm TRỌN section 2 → decode riêng nó ra nguyên vẹn:
+       section 1: t1–t2  "− −"        → ""
+       section 2: t2–t6  "− a a − −"  → "a"   ← 1 chữ, không mất không thừa
+       section 3: t6–t10 "− − b b − −" → "b"
+    nối: "" + "a" + "b" = "ab" ✓  ← decode rời từng khúc vẫn ra đúng cả chuỗi
+```
+
+🔢 **Toy — cắt section trên chuỗi `"aba"` (12 time-step, threshold = .9):**
+
+```
+ t       :  1    2    3    4    5    6    7    8    9    10   11   12
+ argmax  :  a    a    −    −    −    b    b    −    −    a    a    −
+ P(blank):  .05  .05  .98  .99  .99  .04  .04  .97  .98  .06  .06  .98
+                       ↑cắt                 ↑cắt            ↑cắt
+           cắt tại chỗ P(blank) > .9  →  biên t3, t8, t12 (đều là blank)
+
+ section 1: t1–t3  ("a a −")   → decode → "a"   ┐
+ section 2: t4–t8  ("− − b b −") → decode → "b"   ├ nối → "aba" ✓
+ section 3: t9–t12 ("− − a a −") → decode → "a"   ┘
+           2 đầu mỗi section đều blank → không ký tự nào bị vắt qua biên
+```
+
+- CTC output dạng **spike + blank** (Fig 1): thông tin ký tự nằm trọn trong **spike hẹp** (P(ký tự) ≈ 1 tại spike); giữa 2 spike thì **P(blank) ≈ 1** = "đang im lặng".
+- **Cắt tại P(blank) > threshold** = cắt ở vùng chắc chắn không có ký tự → **spike không bao giờ bị đứt đôi**; điểm cắt là nơi mọi path hợp lệ gần như chắc chắn đi qua bằng blank.
+- **Decode từng section mà vẫn đúng:** blank **chặn merge** (B3: `l − l` → `ll`) nên $\mathcal{B}(\pi_1 + \text{blank} + \pi_2) = \mathcal{B}(\pi_1) + \mathcal{B}(\pi_2)$ → labelling cả chuỗi = **nối** labelling các section. Xấp xỉ duy nhất: bỏ qua path hiếm hoi "vắt biên" bằng ký tự (P(blank) < 1) — chỗ này mang tên *heuristic*, cũng là gốc fail case B9.
+- **Vì sao "khả thi":** chi phí prefix search mũ theo **độ dài đoạn** được tìm — cả chuỗi $C^T$; chia $k$ section: $C^{l_1} + \dots + C^{l_k} \ll C^T$. CRNN thực: $38^{26} \approx 10^{41}$ (bất khả thi) vs ~9 section dài 3: $9 \times 38^3 \approx 5 \times 10^5$ (rẻ).
 - Kết luận paper: *"prefix search works well with this heuristic, and generally outperforms best path decoding"* (khớp Table 1 ở B10: 31.47% → 30.51%).
 - **Fail case:** cùng 1 label bị dự đoán **yếu ở cả 2 bên** biên section → cắt sai — chi tiết ở B9.
 
