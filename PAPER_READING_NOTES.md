@@ -983,6 +983,68 @@ Kiểm tra điều kiện dừng (vòng 3): `"XY"` = 0.3 **>** prefix tốt nh�
 
 <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">6️⃣ §4.1 — Training: forward–backward trên lattice `l′` (trái tim của paper)</span>
 
+**Preamble §4 — nguyên lý trước thuật toán** (đoạn văn xuôi mở đầu §4, ngay trước 4.1):
+
+- **ML là "why", forward–backward là "how".** CTC không phát minh loss mới — objective lấy thẳng từ nguyên lý **maximum likelihood** (Bishop 1995: cross-entropy của NN chuẩn cũng là ML — cùng một nguyên lý):
+
+```
+maximize  Σ ln p(l|x)   ⇔   minimize  −Σ ln p(l|x)
+```
+
+  ↳ **"⇔" vì sao?** — từ nguyên lý ML đến loss cần minimize, 3 biến đổi **đơn điệu** (không đổi điểm tối ưu):
+
+```
+(1) nguyên bản:  max  L = p(l₁|x₁) · p(l₂|x₂) · …          ← likelihood của CẢ tập S
+                    (các cặp (xᵢ, lᵢ) độc lập → NHÂN lại)
+
+(2) lấy ln:      max  ln L = ln p(l₁|x₁) + ln p(l₂|x₂) + …  ← ln đơn điệu TĂNG → argmax giữ nguyên
+                    · N xác suất < 1 nhân dồn → về 0 (underflow)
+                    · ln biến TÍCH → TỔNG: cộng an toàn
+
+(3) nhân −1:     min  O = −ln L = −Σᵢ ln p(lᵢ|xᵢ)           ← max f ≡ min −f (đảo chiều)
+                    + thế giới NN quen MINIMIZE "loss"
+                    → O = negative log-likelihood = chính là CTC loss
+```
+
+  ↳ vì thế paper nói *"same principle underlying the standard neural network objective functions"* (Bishop 1995) — cross-entropy cũng đi đúng 3 bước này, chỉ khác L ở mức sample → label.
+
+- **Khác duy nhất với classification thường:** "class" giờ là **cả một labelling** — trừu tượng, hiện thân qua rất nhiều path → phải **marginalize (cộng) hết**, và việc cộng đó chính là lý do cần §4.1:
+
+```
+NN chuẩn :  1 sample   → 1 label       p(class|x)           = 1 ô softmax
+CTC      :  1 sequence → 1 labelling   p(l|x) = Σ_π p(π|x)  = cộng MỌI path
+```
+
+- 🔢 **Ví dụ ngay:** `l = "a"`, `T = 3`, alphabet = {`a`, `−`} → 2³ = 8 path, trong đó **7/8 decode ra `"a"`**:
+
+```
+−−− → ""  ✗    −−a → "a" ✓    −a− → "a" ✓    −aa → "a" ✓
+               a−− → "a" ✓    a−a → "a" ✓    aa− → "a" ✓    aaa → "a" ✓
+```
+
+```
+p("a"|x) = p(−−a) + p(−a−) + … + p(aaa)        ← 7 hạng tử — cộng tay được
+              ↑ mỗi p(π) = y¹_π₁ · y²_π₂ · y³_π₃  (xác suất path = tích theo frame)
+
+T = 26, 38 classes → 38²⁶ ≈ 10⁴¹ path          ← cộng mù không nổi
+                                                ↳ quy hoạch động: forward–backward (§4.1, dưới)
+```
+
+- **Vì sao viết $-\ln$:** (i) $-\ln$ giảm đơn điệu → min $-\ln p$ ⇔ max $p$; (ii) log biến tích path $\prod_t y^t_{\pi_t}$ thành **tổng** — ổn định số học. Trong code đây chính là `losses.append(-total_log_prob)` (`ctc_loss.py:297`).
+- **"derivatives with respect to the network outputs"** = chuỗi gradient: loss → $y^t_k$ (softmax) → **BPTT** (unfold RNN theo $T$, lan truyền ngược) → weights. Hệ quả quan trọng: CTC chỉ là **một tầng loss differentiable** gắn cuối network — train được bằng **bất kỳ optimizer gradient nào** đang dùng (LeCun 1998; Schraudolph 2002 — chỉ là refs, không cần note).
+- **"We begin with an algorithm required for the maximum likelihood function"** = câu cầu nối sang 4.1: thuật toán đó là **forward–backward (Rabiner 1989, mượn từ HMM)** — tính được $p(l|x)$ trong $O(T\cdot|l|)$ thay vì liệt kê mọi path (mũ theo $T$: $38^{26} \approx 10^{41}$ như đã ghi ở mục trước). Toàn bộ bullets dưới đây chỉ là lời giải chi tiết cho câu này.
+- **Bản đồ 2 tầng của §4:**
+
+```
+min −ln p(l|x)   ← nguyên lý ML (preamble — phần này)
+   │
+   ├─ cần p(l|x)         → §4.1: forward–backward trên lattice l′  (α, β, rescaling — bullets dưới)
+   └─ cần ∂(−ln p)/∂y^t  → §4.2: α_t(s)β_t(s) → "y − posterior"     (note 7️⃣)
+         └─ cả hai chỉ là 2 đầu vào cho BPTT — pipeline train không đổi
+```
+
+↳ Đối chiếu: B5 (dưới) có checklist chính đoạn này ("maximum likelihood + BPTT") — phần này là bản mở rộng của nó.
+
 - `l′`: chèn blank đầu/cuối/giữa, len `2|l|+1` ↔ `extended_targets` (`ctc_loss.py:273-279`)
 - Forward α eq(6)–(7): 3 transition stay/move/skip — skip chỉ khi `l′_s ≠ blank` và `l′_s ≠ l′_{s−2}` ↔ skip mask `ctc_loss.py:40-41`
 - eq(8): `p(l|x)` gom từ 2 ô cuối lattice ↔ `logaddexp` tại `ctc_loss.py:294`
