@@ -989,21 +989,54 @@ Kiểm tra điều kiện dừng (vòng 3): `"XY"` = 0.3 **>** prefix tốt nh�
 
 ```
 maximize  Σ ln p(l|x)   ⇔   minimize  −Σ ln p(l|x)
+
+  ↑ TẠI SAO ĐÂY là objective? — "tốt" của model phải đo được bằng số:
+      mỗi cặp (x, l) ∈ S, model gán cho ĐÁP ÁN ĐÚNG một xác suất p(l|x)
+      → p(l|x) càng cao = model càng "tin" đúng đáp án = giải thích tốt dữ liệu
+      → nguyên lý maximum likelihood: chọn θ làm dữ liệu đã quan sát (chính là S)
+        KHẢ THI nhất — model nào cho đáp án đúng xác suất cao nhất thì lúc test
+        cũng tin đúng → đo bằng likelihood là hợp lý nhất
+
+  ⇔ còn "maximize ⇔ minimize" thì sao? — 3 biến đổi đơn điệu, không đổi điểm tối ưu:
+
+  (1) nguyên bản:  max  L = p(l₁|x₁) · p(l₂|x₂) · …          ← likelihood của CẢ tập S
+
+      · L là gì?     = xác suất model θ "đúng ĐỒNG THỜI cả N câu" trong S
+      · vì sao NHÂN? đúng cả N câu = đúng câu1 VÀ câu2 VÀ …
+                     quy tắc AND: P(A và B) = P(A) · P(B)   (OR mới là cộng)
+      · vd số:       .9 × .8 = .72 — 1 câu kém KÉO CẢ TÍCH xuống
+                     → model phải tốt đồng đều, không hở câu nào
+      · giả định:    các cặp (xᵢ, lᵢ) iid — 1 ảnh train không ảnh hưởng ảnh khác
+
+  (2) lấy ln:      max  ln L = ln p(l₁|x₁) + ln p(l₂|x₂) + …  ← ln đơn điệu TĂNG → argmax giữ nguyên
+                      · N xác suất < 1 nhân dồn → về 0 (underflow)
+                      · ln biến TÍCH → TỔNG: cộng an toàn
+
+  (3) nhân −1:     min  O = −ln L = −Σᵢ ln p(lᵢ|xᵢ)           ← max f ≡ min −f (đảo chiều)
+                      + thế giới NN quen MINIMIZE "loss"
+                      → O = negative log-likelihood = chính là CTC loss
 ```
 
-  ↳ **"⇔" vì sao?** — từ nguyên lý ML đến loss cần minimize, 3 biến đổi **đơn điệu** (không đổi điểm tối ưu):
+  ⚠ **"thế thực tế có tính cả S không?" — KHÔNG.** O = −Σ trên S chỉ là **định nghĩa đích** — không ai nhét cả S vào 1 lần tính (chậm + hết RAM). Thực hành = **SGD**:
 
 ```
-(1) nguyên bản:  max  L = p(l₁|x₁) · p(l₂|x₂) · …          ← likelihood của CẢ tập S
-                    (các cặp (xᵢ, lᵢ) độc lập → NHÂN lại)
+mỗi step:  bốc 1 batch B ≪ S ngẫu nhiên     (DataLoader — train_custom.py:54)
+           loss = mean trên B               (ctc_loss.py:431)
+           → loss batch = ƯỚC LƯỢNG KHÔNG CHỆCH của loss toàn S
+             E[gradient batch] = gradient toàn S
+kết quả:   các bước "đo gần" dao động nhẹ nhưng hội tụ về cùng đích
+           (Stochastic GD — "stochastic" = đo bằng mẫu ngẫu nhiên)
+```
 
-(2) lấy ln:      max  ln L = ln p(l₁|x₁) + ln p(l₂|x₂) + …  ← ln đơn điệu TĂNG → argmax giữ nguyên
-                    · N xác suất < 1 nhân dồn → về 0 (underflow)
-                    · ln biến TÍCH → TỔNG: cộng an toàn
+  ↳ 🔢 **chạy số để thấy "⇔":** 2 model thi nhau trên 2 sample (p(l|x) ở đây hiểu là `Σ_π p(π|x)` — mục dưới):
 
-(3) nhân −1:     min  O = −ln L = −Σᵢ ln p(lᵢ|xᵢ)           ← max f ≡ min −f (đảo chiều)
-                    + thế giới NN quen MINIMIZE "loss"
-                    → O = negative log-likelihood = chính là CTC loss
+```
+                     p(l₁|x₁)    p(l₂|x₂)    Σ ln p(l|x)        −Σ ln p(l|x)
+θ_A (học tốt)   :      .90         .80       −0.33  ← LỚN nhất   +0.33  ← NHỎ nhất
+θ_B (ngẫu nhiên):      .30         .20       −2.81               +2.81
+
+→ THỨ HẠNG GIỐNG NHAU ở cả 2 cột ⇒ "maximize Σ ln p" và "minimize −Σ ln p"
+  bầu ra CÙNG một model — hai cách nói, một hành động.
 ```
 
   ↳ vì thế paper nói *"same principle underlying the standard neural network objective functions"* (Bishop 1995) — cross-entropy cũng đi đúng 3 bước này, chỉ khác L ở mức sample → label.
@@ -1012,27 +1045,34 @@ maximize  Σ ln p(l|x)   ⇔   minimize  −Σ ln p(l|x)
 
 ```
 NN chuẩn :  1 sample   → 1 label       p(class|x)           = 1 ô softmax
-CTC      :  1 sequence → 1 labelling   p(l|x) = Σ_π p(π|x)  = cộng MỌI path
+CTC      :  1 sequence → 1 labelling   p(l|x) = Σ_{π} p(π|x)  = cộng MỌI path
 ```
 
 - 🔢 **Ví dụ ngay:** `l = "a"`, `T = 3`, alphabet = {`a`, `−`} → 2³ = 8 path, trong đó **7/8 decode ra `"a"`**:
 
 ```
-−−− → ""  ✗    −−a → "a" ✓    −a− → "a" ✓    −aa → "a" ✓
-               a−− → "a" ✓    a−a → "a" ✓    aa− → "a" ✓    aaa → "a" ✓
+  số hiệu :  π₁     π₂     π₃     π₄     π₅     π₆     π₇
+  path    :  "−−a"  "−a−"  "−aa"  "a−−"  "a−a"  "aa−"  "aaa"
+             (path thứ 8: "−−−" → "" ✗ bị loại)
+
+p("a"|x) = p(π₁|x) + p(π₂|x) + … + p(π₇|x)       ← 7 hạng tử: cộng tay được
+
+  mỗi hạng tử — eq(2):  p(π|x) = ∏ y^t_{π_t}      ← NHÂN xác suất từng frame
+                        = y^1_{c_1} · y^2_{c_2} · y^3_{c_3}        (T = 3)
+        c_t = ký tự thứ t của path π  (paper gọi là π_t; đổi tên thành c
+              để không trùng số hiệu path π₁…π₇)
+
+  vd:  π₂ = "−a−"  →  c₁="−", c₂="a", c₃="−"
+       p(π₂|x) = y^1_{−} · y^2_{a} · y^3_{−}
+               = P(blank, t1) · P(a, t2) · P(blank, t3)
+
+nhưng T = 26, 38 classes → 38²⁶ ≈ 10⁴¹ path      ← cộng mù KHÔNG nổi
+  ↳ cần quy hoạch động: forward–backward (§4.1, dưới)
 ```
 
-```
-p("a"|x) = p(−−a) + p(−a−) + … + p(aaa)        ← 7 hạng tử — cộng tay được
-              ↑ mỗi p(π) = y¹_π₁ · y²_π₂ · y³_π₃  (xác suất path = tích theo frame)
-
-T = 26, 38 classes → 38²⁶ ≈ 10⁴¹ path          ← cộng mù không nổi
-                                                ↳ quy hoạch động: forward–backward (§4.1, dưới)
-```
-
-- **Vì sao viết $-\ln$:** (i) $-\ln$ giảm đơn điệu → min $-\ln p$ ⇔ max $p$; (ii) log biến tích path $\prod_t y^t_{\pi_t}$ thành **tổng** — ổn định số học. Trong code đây chính là `losses.append(-total_log_prob)` (`ctc_loss.py:297`).
-- **"derivatives with respect to the network outputs"** = chuỗi gradient: loss → $y^t_k$ (softmax) → **BPTT** (unfold RNN theo $T$, lan truyền ngược) → weights. Hệ quả quan trọng: CTC chỉ là **một tầng loss differentiable** gắn cuối network — train được bằng **bất kỳ optimizer gradient nào** đang dùng (LeCun 1998; Schraudolph 2002 — chỉ là refs, không cần note).
-- **"We begin with an algorithm required for the maximum likelihood function"** = câu cầu nối sang 4.1: thuật toán đó là **forward–backward (Rabiner 1989, mượn từ HMM)** — tính được $p(l|x)$ trong $O(T\cdot|l|)$ thay vì liệt kê mọi path (mũ theo $T$: $38^{26} \approx 10^{41}$ như đã ghi ở mục trước). Toàn bộ bullets dưới đây chỉ là lời giải chi tiết cho câu này.
+- **Vì sao viết −ln:** (i) −ln **giảm đơn điệu** → `min −ln p ⇔ max p` (đã có trong bước (3) ở block trên); (ii) log biến tích path `∏ y^t_{π_t}` thành **tổng** — ổn định số học. Trong code đây chính là `losses.append(-total_log_prob)` (`ctc_loss.py:297`).
+- **"derivatives with respect to the network outputs"** = chuỗi gradient: loss → `y^t_k` (softmax) → **BPTT** (unfold RNN theo `T`, lan truyền ngược) → weights. Hệ quả quan trọng: CTC chỉ là **một tầng loss differentiable** gắn cuối network — train được bằng **bất kỳ optimizer gradient nào** đang dùng (LeCun 1998; Schraudolph 2002 — chỉ là refs, không cần note).
+- **"We begin with an algorithm required for the maximum likelihood function"** = câu cầu nối sang 4.1: thuật toán đó là **forward–backward (Rabiner 1989, mượn từ HMM)** — tính được `p(l|x)` trong `O(T·|l|)` thay vì liệt kê mọi path (mũ theo `T`: `38²⁶ ≈ 10⁴¹` như đã ghi ở mục trước). Toàn bộ bullets dưới đây chỉ là lời giải chi tiết cho câu này.
 - **Bản đồ 2 tầng của §4:**
 
 ```
