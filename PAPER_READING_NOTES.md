@@ -981,7 +981,7 @@ Kiểm tra điều kiện dừng (vòng 3): `"XY"` = 0.3 **>** prefix tốt nh�
 
 ↳ **Mạch 2 pha chốt lại:** **train** = §4 (DP exact tính loss) · **test** = §3.2 (decode xấp xỉ) — 2 pha, 2 thuật toán, chung 1 bài toán cộng path.
 
-<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">6️⃣ §4.1 — Training: forward–backward trên lattice `l′` (trái tim của paper)</span>
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">6️⃣ §4 — Training the Network (objective: maximum likelihood)</span>
 
 **Preamble §4 — nguyên lý trước thuật toán** (đoạn văn xuôi mở đầu §4, ngay trước 4.1):
 
@@ -1084,6 +1084,8 @@ min −ln p(l|x)   ← nguyên lý ML (preamble — phần này)
 ```
 
 ↳ Đối chiếu: B5 (dưới) có checklist chính đoạn này ("maximum likelihood + BPTT") — phần này là bản mở rộng của nó.
+
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">§4.1 — Training: forward–backward trên lattice `l′` (trái tim của paper)</span>
 
 - `l′`: chèn blank đầu/cuối/giữa, len `2|l|+1` ↔ `extended_targets` (`ctc_loss.py:273-279`)
 - Forward α eq(6)–(7): 3 transition stay/move/skip — skip chỉ khi `l′_s ≠ blank` và `l′_s ≠ l′_{s−2}` ↔ skip mask `ctc_loss.py:40-41`
