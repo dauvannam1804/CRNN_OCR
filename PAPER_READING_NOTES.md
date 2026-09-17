@@ -8,7 +8,7 @@
 > **Quy ước trong từng mục:**
 > - 🔢 **Key point đánh số** — badge nền cam `#FFE0B2` — diễn giải của tôi, không có trong paper; mọi bullet dưới **Key points:** cũng được tô cam.
 > - 🟣 Khối `📜 PAPER · <vị trí>` — **trích dẫn nguyên văn** từ paper, kèm trang; đặt **ngay dưới key point mà nó chứng minh**.
-> - `↳` dòng xám — giải nghĩa quote liên hệ về key point.
+> - `⇒` dòng xám — giải nghĩa quote liên hệ về key point.
 >
 > ⚠️ *Highlight màu dùng inline HTML — hiện đầy đủ trong VS Code preview / Typora / Obsidian. Trên GitHub, style bị strip nhưng heading vẫn hiện text + emoji màu.*
 
@@ -59,13 +59,13 @@ Paper 8 trang. Đọc **theo thứ tự B1→B13** (không theo thứ tự trang
 >
 > *"This paper presents a novel method for training RNNs to label unsegmented sequences directly, thereby solving both problems."*
 >
-> <span style="color:#777">↳ "both problems" = 2 vấn đề nêu ngay câu trước đó: pre-segmented training data + post-processing output.</span>
+> <span style="color:#777">⇒ "both problems" = 2 vấn đề nêu ngay câu trước đó: pre-segmented training data + post-processing output.</span>
 
 > 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §1 (tr.2, đoạn cuối cột phải) — câu mở đầu đoạn</span>
 >
 > *"This paper presents a novel method for labelling sequence data with RNNs that removes the need for pre-segmented training data and post-processed outputs, and models all aspects of the sequence within a single network architecture."*
 >
-> <span style="color:#777">↳ nguồn của ý "mọi thứ trong 1 kiến trúc".</span>
+> <span style="color:#777">⇒ nguồn của ý "mọi thứ trong 1 kiến trúc".</span>
 
 <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">2️⃣ Alignment được gộp vào trong network — không phải HMM align hộ từ bên ngoài.</span>
 
@@ -73,7 +73,7 @@ Paper 8 trang. Đọc **theo thứ tự B1→B13** (không theo thứ tự trang
 >
 > *"The basic idea is to interpret the network outputs as a probability distribution over all possible label sequences, conditioned on a given input sequence."*
 >
-> <span style="color:#777">↳ alignment được marginalize bên trong mô hình qua phân phối xác suất — đi sâu ở §3.1 (eq 2–3), mục B4.</span>
+> <span style="color:#777">⇒ alignment được marginalize bên trong mô hình qua phân phối xác suất — đi sâu ở §3.1 (eq 2–3), mục B4.</span>
 
 🧭 **Trước CTC, bài toán này được xử lý thế nào?** (nền để hiểu 4️⃣)
 - **Cách cũ 1 — cắt/gắn thủ công:** người gắn label cho **từng frame** rồi train framewise (chính là "Kiểu 1" ở 4️⃣ dưới).
@@ -139,7 +139,7 @@ Ngoài ra chữ/số nét đậm nhạt, dính nhau… ⇒ càng không thể g�
 >
 > *"While these approaches have proved successful for many problems, they have several drawbacks: (1) they usually require a significant amount of task specific knowledge, e.g. to design the state models for HMMs, or choose the input features for CRFs; (2) they require explicit (and often questionable) dependency assumptions to make inference tractable, e.g. the assumption that observations are independent for HMMs; (3) for standard HMMs, training is generative, even though sequence labelling is discriminative."*
 >
-> <span style="color:#777">↳ nhược điểm (3) buồn cười nhất: bài toán là discriminative mà HMM lại train generative — "xài sai công cụ".</span>
+> <span style="color:#777">⇒ nhược điểm (3) buồn cười nhất: bài toán là discriminative mà HMM lại train generative — "xài sai công cụ".</span>
 
 **🔎 Ví dụ cụ thể — nhận dạng chữ viết tay "hello":**
 
@@ -153,7 +153,7 @@ Ngoài ra chữ/số nét đậm nhạt, dính nhau… ⇒ càng không thể g�
 | (2) | Giả định phụ thuộc đáng ngờ | HMM giả định ảnh từng ký tự **độc lập** — nhưng viết tay, chữ "r" đứng cạnh "n" có thể nhoè thành "m"! |
 | (3) | "Xài sai công cụ" 😄 | Bài toán là *phân loại* (discriminative) mà HMM lại *học sinh ra dữ liệu* (generative) — giống như để học **phân biệt mèo vs chó**, bạn đi học **vẽ toàn bộ giống mèo và chó** trước, rồi mới dựa vào đó đoán. |
 
-**↳ CRNN sau này giải quyết gọn:** CNN trích đặc trưng + RNN nắm ngữ cảnh (không cần giả định độc lập) + CTC train **end-to-end discriminative** — không thiết kế tay, không đường vòng.
+**⇒ CRNN sau này giải quyết gọn:** CNN trích đặc trưng + RNN nắm ngữ cảnh (không cần giả định độc lập) + CTC train **end-to-end discriminative** — không thiết kế tay, không đường vòng.
 
 <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">2️⃣ RNN khắc phục được cả 3 nhược điểm đó.</span>
 
@@ -161,7 +161,7 @@ Ngoài ra chữ/số nét đậm nhạt, dính nhau… ⇒ càng không thể g�
 >
 > *"Recurrent neural networks (RNNs), on the other hand, require no prior knowledge of the data, beyond the choice of input and output representation. They can be trained discriminatively, and their internal state provides a powerful, general mechanism for modelling time series."*
 >
-> <span style="color:#777">↳ "on the other hand" = đối chiếu thẳng từng điểm với 1️⃣: không cần task-specific knowledge, train discriminative được.</span>
+> <span style="color:#777">⇒ "on the other hand" = đối chiếu thẳng từng điểm với 1️⃣: không cần task-specific knowledge, train discriminative được.</span>
 
 **🔎 Vì sao RNN giải quyết được cả 3 nhược điểm? — đối chiếu 1-1 (tiếp ví dụ chữ "hello"):**
 
@@ -171,7 +171,7 @@ Ngoài ra chữ/số nét đậm nhạt, dính nhau… ⇒ càng không thể g�
 | (2) | Giả định quan sát **độc lập** | **Internal state (hidden state)** truyền dọc chuỗi → mỗi bước "nhớ" những bước trước: nhìn cột "r" mà trước đó là "n" thì biết đấy là "r" chứ không phải nửa "m". Ngữ cảnh = có sẵn, không cần giả định. |
 | (3) | Train generative (đường vòng) | Loss trực tiếp P(nhãn \| ảnh) — **discriminative thuần**. Học thẳng "ảnh này là h-e-l-l-o", không học vẽ chữ. |
 
-**↳ Tóm lại:** RNN thay "thiết kế tay + giả định + đường vòng generative" bằng **1 cơ chế duy nhất — hidden state + backprop qua thời gian (BPTT)**.
+**⇒ Tóm lại:** RNN thay "thiết kế tay + giả định + đường vòng generative" bằng **1 cơ chế duy nhất — hidden state + backprop qua thời gian (BPTT)**.
 
 <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">3️⃣ Nhưng có 1 chướng ngại: objective chuẩn của NN định nghĩa per-frame → phải pre-segment + post-process.</span>
 
@@ -179,7 +179,7 @@ Ngoài ra chữ/số nét đậm nhạt, dính nhau… ⇒ càng không thể g�
 >
 > *"The problem is that the standard neural network objective functions are defined separately for each point in the training sequence; in other words, RNNs can only be trained to make a series of independent label classifications. This means that the training data must be pre-segmented, and that the network outputs must be post-processed to give the final label sequence."*
 >
-> <span style="color:#777">↳ đây chính là "both problems" trong Abstract đã thấy ở B1 — không phải ngẫu nhiên, §1 giải thích chi tiết 2 vấn đề đó.</span>
+> <span style="color:#777">⇒ đây chính là "both problems" trong Abstract đã thấy ở B1 — không phải ngẫu nhiên, §1 giải thích chi tiết 2 vấn đề đó.</span>
 
 **🔎 Vì sao "per-frame objective" là vấn đề? — tiếp ví dụ chữ "hello":**
 
@@ -198,11 +198,11 @@ Có     :  "hello"                   ← chỉ 5 chữ cái, không có biên!
 | **Pre-segmentation** | Trước khi train | Phải có người (hoặc HMM aligner) vẽ biên: cột 1–12 = "h", 13–20 = "e"... Tốn kém + dễ sai — biên vẽ sai thì RNN dự đoán đúng vẫn bị phạt (→ Fig 1, 5️⃣). |
 | **Post-processing** | Sau khi dự đoán | RNN chỉ nhả chuỗi nhãn rời rạc `h h h e l l l l o o` → phải collapse + làm sạch bằng rule phía sau mới ra "hello". |
 
-**↳ Mơ hồ chết người của post-processing:** `l l l l` collapse thành 1 chữ "l" hay 2 chữ "ll"? Không phân biệt được nếu thiếu **ký tự phân cách** — chính là lý do CTC sinh ra symbol **blank** (sẽ thấy ở B5/B6).
+**⇒ Mơ hồ chết người của post-processing:** `l l l l` collapse thành 1 chữ "l" hay 2 chữ "ll"? Không phân biệt được nếu thiếu **ký tự phân cách** — chính là lý do CTC sinh ra symbol **blank** (sẽ thấy ở B5/B6).
 
-**↳ Vấn đề cốt lõi:** loss được định nghĩa per-frame nhưng nhãn thật (transcript) là **sequence-level** — sai lệch "đơn vị đo" này là lý do phải pre-segment + post-process. CTC giải quyết bằng cách đưa loss lên đúng cấp sequence.
+**⇒ Vấn đề cốt lõi:** loss được định nghĩa per-frame nhưng nhãn thật (transcript) là **sequence-level** — sai lệch "đơn vị đo" này là lý do phải pre-segment + post-process. CTC giải quyết bằng cách đưa loss lên đúng cấp sequence.
 
-**↳ Per-frame khác gì sequence-level? — khác nhau ở "đơn vị của nhãn":**
+**⇒ Per-frame khác gì sequence-level? — khác nhau ở "đơn vị của nhãn":**
 
 | | Per-frame | Sequence-level |
 |---|---|---|
@@ -220,7 +220,7 @@ Có     :  "hello"                   ← chỉ 5 chữ cái, không có biên!
 >
 > *"However, as well as inheriting the aforementioned drawbacks of HMMs, hybrid systems do not exploit the full potential of RNNs for sequence modelling."*
 >
-> <span style="color:#777">↳ hybrid = HMM align hộ + NN phân loại cục bộ; "aforementioned drawbacks" = đúng 3 nhược điểm ở 1️⃣. Đây là baseline mà CTC đánh bại ở §5 (B10).</span>
+> <span style="color:#777">⇒ hybrid = HMM align hộ + NN phân loại cục bộ; "aforementioned drawbacks" = đúng 3 nhược điểm ở 1️⃣. Đây là baseline mà CTC đánh bại ở §5 (B10).</span>
 
 <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">5️⃣ Bằng chứng trực quan (Fig 1): framewise network bị phạt oan.</span>
 
@@ -228,7 +228,7 @@ Có     :  "hello"                   ← chỉ 5 chữ cái, không có biên!
 >
 > *"The framewise network receives an error for misaligning the segment boundaries, even if it predicts the correct phoneme (e.g. 'dh')."*
 >
-> <span style="color:#777">↳ đoán ĐÚNG phoneme vẫn bị phạt chỉ vì lệch biên segmentation — lệch biên là noise của label, không phải lỗi của model. CTC chỉ cần "spike" đúng chỗ, không cần đúng biên.</span>
+> <span style="color:#777">⇒ đoán ĐÚNG phoneme vẫn bị phạt chỉ vì lệch biên segmentation — lệch biên là noise của label, không phải lỗi của model. CTC chỉ cần "spike" đúng chỗ, không cần đúng biên.</span>
 
 ![Fig 1 — Framewise vs CTC networks classifying a speech signal](images/Fig1.png)
 
@@ -313,7 +313,7 @@ tách mảng:  [0:1500][1500:3000] [3000:5000][5000:9000][9000:14000] ...
 - ~9 phoneme × biên bắt đầu/kết thúc ≈ vài chục số metadata — nhưng phải gắn **thủ công**: đây là per-frame label "có sẵn" của speech (mục 3️⃣), còn OCR thì không — chỉ có chữ "hello"
 - ⚠️ Con số 32,000 là **ước lượng minh họa** (giả định đoạn dài tròn 2 giây), không phải số liệu từ paper — Fig 1 không ghi độ dài hay số sample
 
-**↳ So sánh với ảnh OCR (trắng/xám):** waveform = mảng **1D** `(32000,)` — 1 số (biên độ) theo thời gian; ảnh grayscale = ma trận **2D** `(cao, rộng)` numpy, mỗi phần tử 0–255 (đen→trắng), binary thì chỉ 0/1. Điểm chung: RNN đều đọc theo **trục thời gian** — trục width của ảnh OCR (cột ký tự = timestep) ≈ trục thời gian của waveform/spectrogram → cùng 1 kiến trúc CTC chạy được cho cả speech lẫn OCR.
+**⇒ So sánh với ảnh OCR (trắng/xám):** waveform = mảng **1D** `(32000,)` — 1 số (biên độ) theo thời gian; ảnh grayscale = ma trận **2D** `(cao, rộng)` numpy, mỗi phần tử 0–255 (đen→trắng), binary thì chỉ 0/1. Điểm chung: RNN đều đọc theo **trục thời gian** — trục width của ảnh OCR (cột ký tự = timestep) ≈ trục thời gian của waveform/spectrogram → cùng 1 kiến trúc CTC chạy được cho cả speech lẫn OCR.
 
 </details>
 
@@ -515,7 +515,7 @@ Cái mình CÓ   :  transcript "AB"                          ← biết có A r�
 Cái mình THIẾU:  A rơi vào cột nào? B rơi vào cột nào?   ← alignment
 ```
 
-↳ Đây chính là "câu hỏi trung tâm" đã nêu ở B1-3️⃣ — giờ thêm mảnh ghép then chốt: thay vì *đoán 1 alignment duy nhất*, CTC **lấy tất cả**: coi MỌI cách ghép đều khả dĩ và cộng lại (→ 4️⃣).
+⇒ Đây chính là "câu hỏi trung tâm" đã nêu ở B1-3️⃣ — giờ thêm mảnh ghép then chốt: thay vì *đoán 1 alignment duy nhất*, CTC **lấy tất cả**: coi MỌI cách ghép đều khả dĩ và cộng lại (→ 4️⃣).
 
 <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">2️⃣ Blank = "nhịp này chưa nhả ký tự mới" — unit thứ `|L|+1` của softmax.</span>
 
@@ -523,7 +523,7 @@ Cái mình THIẾU:  A rơi vào cột nào? B rơi vào cột nào?   ← align
 >
 > *"The activation of the extra unit is the probability of observing a 'blank', or no label."*
 >
-> <span style="color:#777">↳ "extra unit" = unit thứ |L|+1: vocab N ký tự → softmax ra N+1 đầu, đầu thừa đó chính là blank.</span>
+> <span style="color:#777">⇒ "extra unit" = unit thứ |L|+1: vocab N ký tự → softmax ra N+1 đầu, đầu thừa đó chính là blank.</span>
 
 Blank cho network quyền **im lặng** — không bị ép đoán 1 ký tự ở mọi cột như framewise (B2-3️⃣). Trong panel CTC của Fig 1: blank ≈ 1 ở giữa 2 spike = "đang chờ, chưa nhả gì mới".
 
@@ -535,7 +535,7 @@ Blank cho network quyền **im lặng** — không bị ép đoán 1 ký tự �
 >
 > *"Intuitively, this corresponds to outputting a new label when the network switches from predicting no label to predicting a label, or from predicting one label to another (c.f. the CTC outputs in figure 1)."*
 >
-> <span style="color:#777">↳ Đọc hiểu: chỉ "nhả chữ mới" khi path CHUYỂN TRẠNG THÁI (blank → ký tự, hoặc ký tự → ký tự KHÁC). Ký tự lặp liền nhau không phải chuyển trạng thái → bị gộp.</span>
+> <span style="color:#777">⇒ Đọc hiểu: chỉ "nhả chữ mới" khi path CHUYỂN TRẠNG THÁI (blank → ký tự, hoặc ký tự → ký tự KHÁC). Ký tự lặp liền nhau không phải chuyển trạng thái → bị gộp.</span>
 
 **🔎 Câu hỏi hay: "removing all blanks and repeated labels" — đọc theo thứ tự nào (bỏ blank trước hay gộp lặp trước)?**
 
@@ -577,9 +577,9 @@ Quy tắc: đi từng bước, nhả chữ mỗi khi (blank→ký tự) hoặc (
 >
 > *"Together, these outputs define the probabilities of all possible ways of aligning all possible label sequences with the input sequence. The total probability of any one label sequence can then be found by summing the probabilities of its different alignments."*
 >
-> <span style="color:#777">↳ p("aa"|x) = cộng xác suất của cả 4 path ✓ ở toy trên (cùng mọi path khác) — không chọn path nào làm "đáp án chuẩn".</span>
+> <span style="color:#777">⇒ p("aa"|x) = cộng xác suất của cả 4 path ✓ ở toy trên (cùng mọi path khác) — không chọn path nào làm "đáp án chuẩn".</span>
 
-↳ Vì sao SUM chứ không lấy path tốt nhất? Model chưa học thì không biết chỗ nào đúng — ép chọn 1 alignment là quay lại lỗi "phạt oan" của framewise (B2-5️⃣). Sum hết → model **tự dồn** xác suất về các path đúng trong lúc train. *(Số path mũ T nên không đếm tay được → DP forward-backward, ở B4.)*
+⇒ Vì sao SUM chứ không lấy path tốt nhất? Model chưa học thì không biết chỗ nào đúng — ép chọn 1 alignment là quay lại lỗi "phạt oan" của framewise (B2-5️⃣). Sum hết → model **tự dồn** xác suất về các path đúng trong lúc train. *(Số path mũ T nên không đếm tay được → DP forward-backward, ở B4.)*
 
 <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">5️⃣ Gắn với repo: blank cố định ở index 0 (`src/dataset.py:14-15`).</span>
 
@@ -642,16 +642,16 @@ x = [T=26, B=1, 512]              ← ĐÚNG x = (x_1,…,x_26) của §2: mỗi
 y = [T=26, B=1, 39]               ← y^t_k (softmax per-frame ở 2️⃣)
 ```
 
-↳ Nói "CNN đứng ngoài $N_w$" khớp ghi chú B1: *paper = RNN + CTC; CNN chỉ là phần chuẩn bị input của repo*. Câu hỏi "$x$ là ảnh hay feature?" — đáp án: **feature**; ảnh thô chưa phải $x$, phải qua CNN trước đã.
+⇒ Nói "CNN đứng ngoài $N_w$" khớp ghi chú B1: *paper = RNN + CTC; CNN chỉ là phần chuẩn bị input của repo*. Câu hỏi "$x$ là ảnh hay feature?" — đáp án: **feature**; ảnh thô chưa phải $x$, phải qua CNN trước đã.
 
 > 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §2 (tr.2) — câu kết §2</span>
 >
 > *"Since the input and target sequences are not generally the same length, there is no a priori way of aligning them."*
 >
-> <span style="color:#777">↳ "no a priori way of aligning them" = data chỉ có cặp (x, z), KHÔNG có cặp (time-step, label) → alignment không tồn tại trong data. Toàn bộ §3–§4 là câu trả lời cho "align kiểu gì khi không ai chỉ?".</span>
+> <span style="color:#777">⇒ "no a priori way of aligning them" = data chỉ có cặp (x, z), KHÔNG có cặp (time-step, label) → alignment không tồn tại trong data. Toàn bộ §3–§4 là câu trả lời cho "align kiểu gì khi không ai chỉ?".</span>
 
-↳ Mục tiêu §2: dùng `S` train `h` để classify dữ liệu mới, minimize error measure — thước đo đó là LER eq(1) ở §2.1 (đi sâu ở **B10**).
-↳ Đây là lý do tồn tại của cả paper — câu trả lời "học thế nào" trải dài từ 2️⃣ đến 7️⃣.
+⇒ Mục tiêu §2: dùng `S` train `h` để classify dữ liệu mới, minimize error measure — thước đo đó là LER eq(1) ở §2.1 (đi sâu ở **B10**).
+⇒ Đây là lý do tồn tại của cả paper — câu trả lời "học thế nào" trải dài từ 2️⃣ đến 7️⃣.
 
 <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">2️⃣ §3.1 — Output per-frame: softmax có thêm unit blank</span>
 
@@ -665,9 +665,9 @@ $$y^t_k = \frac{\exp(u^t_k)}{\sum_{k'=1}^{|\mathcal{L}'|} \exp(u^t_{k'})}, \qqua
 - $y^t_k$ — xác suất ký tự $k$ được nhả tại time-step $t$; mỗi cột $t$ có $\sum_k y^t_k = 1$
 - $\mathcal{L}' = \mathcal{L} \cup \{\text{blank}\}$ — vocab 38 ký tự của repo → softmax ra **39 đầu**, đầu thừa (index 0) chính là blank
 
-↳ Softmax ↔ `log_softmax(2)` tại `src/train.py:53`; `n_class = len(vocab) + 1` tại `src/train.py:142`.
-↳ Định nghĩa hình thức $N_w: (\mathbb{R}^m)^T \mapsto (\mathbb{R}^n)^T$ (network = map **chuỗi vector → chuỗi vector**) — nội dung chi tiết ở **B8** (architecture-level: thay backbone được, CTC không quan tâm).
-↳ *"Implicit in (2)"* — eq(2) của paper là công thức **tích path** ở 4️⃣ (KHÔNG phải softmax); giả định independence nói về eq(2) đó → phân tích ở **B5**.
+⇒ Softmax ↔ `log_softmax(2)` tại `src/train.py:53`; `n_class = len(vocab) + 1` tại `src/train.py:142`.
+⇒ Định nghĩa hình thức $N_w: (\mathbb{R}^m)^T \mapsto (\mathbb{R}^n)^T$ (network = map **chuỗi vector → chuỗi vector**) — nội dung chi tiết ở **B8** (architecture-level: thay backbone được, CTC không quan tâm).
+⇒ *"Implicit in (2)"* — eq(2) của paper là công thức **tích path** ở 4️⃣ (KHÔNG phải softmax); giả định independence nói về eq(2) đó → phân tích ở **B5**.
 
 > 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §3.1 (tr.2) — đoạn "More formally…" — định nghĩa hình thức</span>
 >
@@ -677,7 +677,7 @@ $$y^t_k = \frac{\exp(u^t_k)}{\sum_{k'=1}^{|\mathcal{L}'|} \exp(u^t_{k'})}, \qqua
 >
 > *"From now on, we refer to the elements of $\mathcal{L}'^T$ as **paths**, and denote them $\pi$."* ← công thức ở giữa 2 câu này chính là **eq(2)**
 >
-> <span style="color:#777">↳ Đoạn này chứa 3 mảnh: (1) $N_w$ — network là map chuỗi→chuỗi → chi tiết ở **B8**; (2) $y^t_k$ — xác suất label $k$ tại time $t$ → đúng phần softmax ở trên; (3) eq(2) — phân phối trên tập path → mở đường cho 3️⃣–4️⃣.</span>
+> <span style="color:#777">⇒ Đoạn này chứa 3 mảnh: (1) $N_w$ — network là map chuỗi→chuỗi → chi tiết ở **B8**; (2) $y^t_k$ — xác suất label $k$ tại time $t$ → đúng phần softmax ở trên; (3) eq(2) — phân phối trên tập path → mở đường cho 3️⃣–4️⃣.</span>
 
 **🔎 Giải thích chi tiết — từng ký hiệu trong đoạn trên:**
 
@@ -712,7 +712,7 @@ $$\pi = (\pi_1, \pi_2, \dots, \pi_T) \in \mathcal{L}'^T$$
 
 $$\mathcal{B}(a-ab-) = \mathcal{B}(-aa--abb) = aab$$
 
-↳ **Nhiều path cùng map về 1 label** — chìa khóa để hiểu vì sao eq(3) phải cộng cả đống path. (Toy liệt kê path nào ra `"aa"` ở B3-3️⃣.)
+⇒ **Nhiều path cùng map về 1 label** — chìa khóa để hiểu vì sao eq(3) phải cộng cả đống path. (Toy liệt kê path nào ra `"aa"` ở B3-3️⃣.)
 
 <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">4️⃣ §3.1 — eq(3): cộng tất cả path — không enumerate nổi → cần DP</span>
 
@@ -726,7 +726,7 @@ $$p(l \mid x) = \sum_{\pi \in \mathcal{B}^{-1}(l)} p(\pi \mid x), \qquad \underb
 - $\pi_t$ — ký tự/blank mà path chọn tại bước $t$; $y^t_{\pi_t}$ là xác suất lựa chọn đó, đọc thẳng từ softmax ở 2️⃣
 
 Số path mũ $T$ → không liệt kê nổi → **hai lối thoát**: xấp xỉ khi decode (§3.2) và DP chính xác khi train (§4).
-↳ Đây là điểm nối §3 → §4: cùng một bài toán cộng path, 2 cách giải cho 2 pha.
+⇒ Đây là điểm nối §3 → §4: cùng một bài toán cộng path, 2 cách giải cho 2 pha.
 
 <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">5️⃣ §3.2 — Decoding: best path (greedy) vs prefix search (beam)</span>
 
@@ -736,7 +736,7 @@ Số path mũ $T$ → không liệt kê nổi → **hai lối thoát**: xấp x�
 >
 > *"Using the terminology of HMMs, we refer to the task of finding this labelling as decoding. Unfortunately, we do not know of a general, tractable decoding algorithm for our system. However the following two approximate methods give good results in practice."*
 >
-> <span style="color:#777">↳ 3 câu = 3 ý: (1) đặt tên — việc tìm labelling eq(4) lúc inference gọi là "decoding", mượn từ HMM; (2) than khó — không có thuật toán exact nhanh; (3) xách ra 2 cách xấp xỉ = best path + prefix search.</span>
+> <span style="color:#777">⇒ 3 câu = 3 ý: (1) đặt tên — việc tìm labelling eq(4) lúc inference gọi là "decoding", mượn từ HMM; (2) than khó — không có thuật toán exact nhanh; (3) xách ra 2 cách xấp xỉ = best path + prefix search.</span>
 
 **Bước 1 — eq(4): mục tiêu cần "decode"** — chuỗi label có xác suất cao nhất:
 
@@ -788,7 +788,7 @@ path    P = tích       collapse
 | Xác suất từng bước | emission prob $b_j(o_t)$ | softmax $y^t_k$ |
 | Decoding = | tìm state sequence tốt nhất → **Viterbi** (exact, đa thức) | tìm **labelling** tốt nhất → ❗KHÔNG có "Viterbi tương đương" |
 
-↳ Sau này đọc "CTC decoder" trong tài liệu OCR/speech — nguồn gốc từ đây.
+⇒ Sau này đọc "CTC decoder" trong tài liệu OCR/speech — nguồn gốc từ đây.
 
 - **Vì sao intractable:** tính $p(l \mid x)$ cho **1 label** thì DP nhanh được (forward-backward §4 — thứ dùng khi train); **KHÓ nằm ở argmax trên MỌI label** (số lượng mũ $T$). CTC **có** Viterbi — nhưng cho **path**, không cho **label**: mỗi label là 1 **lớp tương đương** gộp từ nhiều path, không DP trực tiếp được. Chữ "**general**" = hedge: chưa ai biết thuật toán nhanh tổng quát, paper không khẳng định không tồn tại.
 
@@ -801,7 +801,7 @@ Giả định labelling tốt nhất đến từ path tốt nhất:
 $$h(x) ≈ \mathcal{B}(\pi^*), \qquad \pi^* = \arg\max_{\pi \in \mathcal{L}'^T} p(\pi \mid x)$$
 
 Đọc công thức:
-- $\pi^*$ — path đỉnh: argmax **từng time-step** rồi áp $\mathcal{B}$ — nhanh $O(T)$, nhưng ↳ **chỉ là xấp xỉ** (nhiều path cùng về 1 label — 3️⃣):
+- $\pi^*$ — path đỉnh: argmax **từng time-step** rồi áp $\mathcal{B}$ — nhanh $O(T)$, nhưng ⇒ **chỉ là xấp xỉ** (nhiều path cùng về 1 label — 3️⃣):
 
 🔢 **Toy — argmax-path ≠ argmax-label** (T=3, vocab `{a,b,-}`, mỗi dòng softmax tổng = 1):
 
@@ -835,7 +835,7 @@ Cộng **đúng** path nhưng khôn ngoan: đếm theo **prefix** trên **cây t
 >
 > *"The second method (prefix search decoding) relies on the fact that, by modifying the forward-backward algorithm of section 4.1, we can efficiently calculate the probabilities of successive extensions of labelling prefixes (figure 2). Given enough time, prefix search decoding always finds the most probable labelling. However, the maximum number of prefixes it must expand grows exponentially with the input sequence length. If the output distribution is sufficiently peaked around the mode, it will nonetheless finish in reasonable time. For the experiment in this paper though, a further heuristic was required to make its application feasible."*
 >
-> <span style="color:#777">↳ khớp 1-1: câu 1 = nguồn của số trên node Fig 2 (forward-backward biến thể §4.1 tính xác suất các prefix mở rộng) · câu 2 = Exact ✓ — đủ thời gian luôn ra labelling xác suất cao nhất · câu 3 = số prefix phải mở rộng mũ theo độ dài chuỗi · câu 4 = output peaked (spike sắc, Fig 1) thì vẫn xong nhanh · câu 5 = câu chuyển tiếp → heuristic chia section (mục dưới).</span>
+> <span style="color:#777">⇒ khớp 1-1: câu 1 = nguồn của số trên node Fig 2 (forward-backward biến thể §4.1 tính xác suất các prefix mở rộng) · câu 2 = Exact ✓ — đủ thời gian luôn ra labelling xác suất cao nhất · câu 3 = số prefix phải mở rộng mũ theo độ dài chuỗi · câu 4 = output peaked (spike sắc, Fig 1) thì vẫn xong nhanh · câu 5 = câu chuyển tiếp → heuristic chia section (mục dưới).</span>
 
 ![Fig 2 — Prefix search decoding trên alphabet {X, Y}](images/Fig2.png)
 
@@ -883,7 +883,7 @@ Cộng **đúng** path nhưng khôn ngoan: đếm theo **prefix** trên **cây t
 | 2 | `XX`, `XY` → **2** ký tự | `e"X"` → **1** ký tự |
 | 3 | `XYX`, `XYY` → **3** ký tự | `e"XY"` → **2** ký tự ⭐ |
 
-↳ Quy tắc: node mở rộng ở cấp $d$ = prefix dài $d$ ký tự; node `e` dưới nó chốt labelling **bằng đúng prefix của cha** → dài $d-1$ (ví dụ `e` ở cấp 3 chốt `"XY"` dài 2). Cây sâu tối đa = $T$: labelling không thể dài hơn số time-step — sâu hơn T thì mọi node chỉ còn cách chốt (`e`).
+⇒ Quy tắc: node mở rộng ở cấp $d$ = prefix dài $d$ ký tự; node `e` dưới nó chốt labelling **bằng đúng prefix của cha** → dài $d-1$ (ví dụ `e` ở cấp 3 chốt `"XY"` dài 2). Cây sâu tối đa = $T$: labelling không thể dài hơn số time-step — sâu hơn T thì mọi node chỉ còn cách chốt (`e`).
 
 🔢 **Vì sao "số prefix phải mở rộng mũ theo độ dài chuỗi"? — đếm trực tiếp trên cây:**
 
@@ -903,7 +903,7 @@ Mỗi node mở rộng sinh ra đúng C node mở rộng mới (C = số ký t�
                           labelling ở Bước 1 — vì prefix dài T ≈ labelling dài T)
 ```
 
-↳ Chữ "**maximum**" là chặn trên xấu nhất: best-first thường mở **ít hơn nhiều** — output peaked (spike sắc, Fig 1) thì vài vòng đã dừng (câu 4 của quote). Nhưng để **bảo đảm** khả thi cho mọi case, paper mới cần heuristic chia section (mục dưới); còn `decode_beam_search` chặn cứng bằng cách giữ top `beam_width` prefix mỗi bước → chi phí `beam_width × T`, không còn mũ.
+⇒ Chữ "**maximum**" là chặn trên xấu nhất: best-first thường mở **ít hơn nhiều** — output peaked (spike sắc, Fig 1) thì vài vòng đã dừng (câu 4 của quote). Nhưng để **bảo đảm** khả thi cho mọi case, paper mới cần heuristic chia section (mục dưới); còn `decode_beam_search` chặn cứng bằng cách giữ top `beam_width` prefix mỗi bước → chi phí `beam_width × T`, không còn mũ.
 
 **📖 Chạy tay 3 vòng lặp trên đúng cây này:**
 
@@ -922,7 +922,7 @@ Kiểm tra điều kiện dừng (vòng 3): `"XY"` = 0.3 **>** prefix tốt nh�
 >
 > *"Observing that the outputs of a trained CTC network tend to form a series of spikes separated by strongly predicted blanks (figure 1), we divide the output sequence into sections that are very likely to begin and end with a blank. We do this by choosing boundary points where the probability of observing a blank label is above a certain threshold. We then calculate the most probable labelling for each section individually and concatenate these to get the final classification. In practice, prefix search works well with this heuristic, and generally outperforms best path decoding. However it does fail in some cases, e.g. if the same label is predicted weakly on both sides of a section boundary."*
 >
-> <span style="color:#777">↳ khớp 1-1 với 3 bullet dưới: câu 1–2 = spike + blank → cắt tại P(blank) &gt; threshold · câu 3 = decode từng section + nối · câu 4 = kết luận prefix search thắng best path (Table 1, B10) · câu 5 = fail case (B9).</span>
+> <span style="color:#777">⇒ khớp 1-1 với 3 bullet dưới: câu 1–2 = spike + blank → cắt tại P(blank) &gt; threshold · câu 3 = decode từng section + nối · câu 4 = kết luận prefix search thắng best path (Table 1, B10) · câu 5 = fail case (B9).</span>
 
 **🌍 Bảng dịch đoạn heuristic — từng câu một:**
 
@@ -979,7 +979,7 @@ Kiểm tra điều kiện dừng (vòng 3): `"XY"` = 0.3 **>** prefix tốt nh�
 - Kết luận paper: *"prefix search works well with this heuristic, and generally outperforms best path decoding"* (khớp Table 1 ở B10: 31.47% → 30.51%).
 - **Fail case:** cùng 1 label bị dự đoán **yếu ở cả 2 bên** biên section → cắt sai — chi tiết ở B9.
 
-↳ **Mạch 2 pha chốt lại:** **train** = §4 (DP exact tính loss) · **test** = §3.2 (decode xấp xỉ) — 2 pha, 2 thuật toán, chung 1 bài toán cộng path.
+⇒ **Mạch 2 pha chốt lại:** **train** = §4 (DP exact tính loss) · **test** = §3.2 (decode xấp xỉ) — 2 pha, 2 thuật toán, chung 1 bài toán cộng path.
 
 <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">6️⃣ §4 — Training the Network (objective: maximum likelihood)</span>
 
@@ -1028,7 +1028,7 @@ kết quả:   các bước "đo gần" dao động nhẹ nhưng hội tụ về
            (Stochastic GD — "stochastic" = đo bằng mẫu ngẫu nhiên)
 ```
 
-  ↳ 🔢 **chạy số để thấy "⇔":** 2 model thi nhau trên 2 sample (p(l|x) ở đây hiểu là `Σ_π p(π|x)` — mục dưới):
+  ⇒ 🔢 **chạy số để thấy "⇔":** 2 model thi nhau trên 2 sample (p(l|x) ở đây hiểu là `Σ_π p(π|x)` — mục dưới):
 
 ```
                      p(l₁|x₁)    p(l₂|x₂)    Σ ln p(l|x)        −Σ ln p(l|x)
@@ -1039,51 +1039,60 @@ kết quả:   các bước "đo gần" dao động nhẹ nhưng hội tụ về
   bầu ra CÙNG một model — hai cách nói, một hành động.
 ```
 
-  ↳ vì thế paper nói *"same principle underlying the standard neural network objective functions"* (Bishop 1995) — cross-entropy cũng đi đúng 3 bước này, chỉ khác L ở mức sample → label.
+  ⇒ vì thế paper nói *"same principle underlying the standard neural network objective functions"* (Bishop 1995) — cross-entropy cũng đi đúng 3 bước này, chỉ khác L ở mức sample → label.
 
 - **Khác duy nhất với classification thường:** "class" giờ là **cả một labelling** — trừu tượng, hiện thân qua rất nhiều path → phải **marginalize (cộng) hết**, và việc cộng đó chính là lý do cần §4.1:
 
-```
-NN chuẩn :  1 sample   → 1 label       p(class|x)           = 1 ô softmax
-CTC      :  1 sequence → 1 labelling   p(l|x) = Σ_{π} p(π|x)  = cộng MỌI path
-```
+|   | mapping | xác suất | ý nghĩa |
+|---|---------|----------|---------|
+| **NN chuẩn** | 1 sample → 1 label | $p(\text{class} \mid x)$ | = 1 ô softmax |
+| **CTC** | 1 sequence → 1 labelling | $p(l \mid x) = \displaystyle\sum_{\pi} p(\pi \mid x)$ | = cộng **MỌI** path |
 
 - 🔢 **Ví dụ ngay:** `l = "a"`, `T = 3`, alphabet = {`a`, `−`} → 2³ = 8 path, trong đó **7/8 decode ra `"a"`**:
 
 ```
-  số hiệu :  π₁     π₂     π₃     π₄     π₅     π₆     π₇
-  path    :  "−−a"  "−a−"  "−aa"  "a−−"  "a−a"  "aa−"  "aaa"
-             (path thứ 8: "−−−" → "" ✗ bị loại)
-
-p("a"|x) = p(π₁|x) + p(π₂|x) + … + p(π₇|x)       ← 7 hạng tử: cộng tay được
-
-  mỗi hạng tử — eq(2):  p(π|x) = ∏ y^t_{π_t}      ← NHÂN xác suất từng frame
-                        = y^1_{c_1} · y^2_{c_2} · y^3_{c_3}        (T = 3)
-        c_t = ký tự thứ t của path π  (paper gọi là π_t; đổi tên thành c
-              để không trùng số hiệu path π₁…π₇)
-
-  vd:  π₂ = "−a−"  →  c₁="−", c₂="a", c₃="−"
-       p(π₂|x) = y^1_{−} · y^2_{a} · y^3_{−}
-               = P(blank, t1) · P(a, t2) · P(blank, t3)
-
-nhưng T = 26, 38 classes → 38²⁶ ≈ 10⁴¹ path      ← cộng mù KHÔNG nổi
-  ↳ cần quy hoạch động: forward–backward (§4.1, dưới)
+số hiệu :  π₁     π₂     π₃     π₄     π₅     π₆     π₇
+path    :  "−−a"  "−a−"  "−aa"  "a−−"  "a−a"  "aa−"  "aaa"
+           (path thứ 8: "−−−" → "" ✗ bị loại)
 ```
 
-- **Vì sao viết −ln:** (i) −ln **giảm đơn điệu** → `min −ln p ⇔ max p` (đã có trong bước (3) ở block trên); (ii) log biến tích path `∏ y^t_{π_t}` thành **tổng** — ổn định số học. Trong code đây chính là `losses.append(-total_log_prob)` (`ctc_loss.py:297`).
-- **"derivatives with respect to the network outputs"** = chuỗi gradient: loss → `y^t_k` (softmax) → **BPTT** (unfold RNN theo `T`, lan truyền ngược) → weights. Hệ quả quan trọng: CTC chỉ là **một tầng loss differentiable** gắn cuối network — train được bằng **bất kỳ optimizer gradient nào** đang dùng (LeCun 1998; Schraudolph 2002 — chỉ là refs, không cần note).
-- **"We begin with an algorithm required for the maximum likelihood function"** = câu cầu nối sang 4.1: thuật toán đó là **forward–backward (Rabiner 1989, mượn từ HMM)** — tính được `p(l|x)` trong `O(T·|l|)` thay vì liệt kê mọi path (mũ theo `T`: `38²⁶ ≈ 10⁴¹` như đã ghi ở mục trước). Toàn bộ bullets dưới đây chỉ là lời giải chi tiết cho câu này.
+$$p(\text{"a"} \mid x) = \sum_{i=1}^{7} p(\pi_i \mid x)$$
+
+⇒ 7 hạng tử — **cộng tay được**
+
+Mỗi hạng tử tính theo **eq(2)**: $p(\pi \mid x) = \prod_{t=1}^{T} y^t_{\pi_t}$ — với $T = 3$:
+
+$$p(\pi \mid x) = y^1_{c_1} \cdot y^2_{c_2} \cdot y^3_{c_3}$$
+
+- $y^t_{c}$: xác suất ký tự $c$ ở frame $t$ — **mũ = frame, chỉ số dưới = ký tự**
+- $c_t$ = ký tự thứ $t$ của path (paper ký hiệu $\pi_t$; đổi thành $c$ để khỏi trùng số hiệu path $\pi_1, …, \pi_7$)
+
+vd: $\pi_2 =$ "−a−" → $c_1 =$ "−", $c_2 =$ "a", $c_3 =$ "−":
+
+$$p(\pi_2 \mid x) = y^1_{-} \cdot y^2_{a} \cdot y^3_{-} = P(\text{blank}, t_1) \cdot P(a, t_2) \cdot P(\text{blank}, t_3)$$
+
+Nhưng $T = 26$, 38 classes → $38^{26} \approx 10^{41}$ path — **cộng mù KHÔNG nổi**
+⇒ cần quy hoạch động: **forward–backward** (§4.1, dưới)
+
+- **Vì sao viết $-\ln$:**
+  - (i) $-\ln$ **giảm đơn điệu** ⇒ $\min -\ln p \Leftrightarrow \max p$ (bước (3) ở block trên)
+  - (ii) log biến tích path $\prod_t y^t_{\pi_t}$ thành **tổng** — ổn định số học
+  - trong code: `losses.append(-total_log_prob)` (`ctc_loss.py:297`)
+
+- **"derivatives with respect to the network outputs"** — chuỗi gradient:
+  **loss** → $y^t_k$ (softmax) → **BPTT** (unfold RNN theo $T$, lan truyền ngược) → **weights**
+  ⇒ CTC chỉ là **một tầng loss differentiable** gắn cuối network — train bằng **bất kỳ optimizer gradient nào** (LeCun 1998; Schraudolph 2002 — chỉ là refs, không cần note).
+
+- **"We begin with an algorithm required for the maximum likelihood function"** — câu cầu nối sang §4.1: thuật toán đó là **forward–backward** (Rabiner 1989, mượn từ HMM) — tính được $p(l \mid x)$ trong $O(T \cdot |l|)$ thay vì liệt kê mọi path (mũ theo $T$: $38^{26} \approx 10^{41}$). Toàn bộ bullets dưới đây là lời giải chi tiết cho câu này.
+
 - **Bản đồ 2 tầng của §4:**
 
-```
-min −ln p(l|x)   ← nguyên lý ML (preamble — phần này)
-   │
-   ├─ cần p(l|x)         → §4.1: forward–backward trên lattice l′  (α, β, rescaling — bullets dưới)
-   └─ cần ∂(−ln p)/∂y^t  → §4.2: α_t(s)β_t(s) → "y − posterior"     (note 7️⃣)
-         └─ cả hai chỉ là 2 đầu vào cho BPTT — pipeline train không đổi
-```
+- **Objective:** $-\ln p(l \mid x)$ ← nguyên lý ML (preamble — phần này)
+- **Cần $p(l \mid x)$** ⇒ **§4.1**: forward–backward trên lattice $l'$ (α, β, rescaling — bullets dưới)
+- **Cần $\partial(-\ln p)/\partial y^t$** ⇒ **§4.2**: $\alpha_t(s)\,\beta_t(s)$ → "y − posterior" (note 7️⃣)
+  - ⇒ cả hai chỉ là 2 đầu vào cho **BPTT** — pipeline train không đổi
 
-↳ Đối chiếu: B5 (dưới) có checklist chính đoạn này ("maximum likelihood + BPTT") — phần này là bản mở rộng của nó.
+⇒ Đối chiếu: B5 (dưới) có checklist chính đoạn này ("maximum likelihood + BPTT") — phần này là bản mở rộng của nó.
 
 <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">§4.1 — Training: forward–backward trên lattice `l′` (trái tim của paper)</span>
 
@@ -1096,7 +1105,7 @@ min −ln p(l|x)   ← nguyên lý ML (preamble — phần này)
 <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">7️⃣ §4.2 — Gradient: `α·β` đếm path qua mỗi ô, error signal `y − posterior`</span>
 
 `α_t(s)β_t(s)` = xác suất mọi path qua symbol s tại t; eq(15)–(16) → `∂O/∂u^t_k = y^t_k − posterior` ↔ `backward()` `ctc_loss.py:314`.
-↳ **Fig 4**: error dạng spike, tự triệt tiêu khi hội tụ — hệ quả trực tiếp của eq(16).
+⇒ **Fig 4**: error dạng spike, tự triệt tiêu khi hội tụ — hệ quả trực tiếp của eq(16).
 
 > [!IMPORTANT]
 > **Bài tập bắt buộc trước buổi seminar:** tự vẽ lattice "CAT" như Fig 3, chạy tay eq(6)(7) cho 3 time-step đầu. Nếu chạy tay ra được = đã hiểu 80% paper.
@@ -1230,7 +1239,7 @@ $$LER(h, S') = \frac{1}{Z}\sum_{(x,z) \in S'} \frac{ED(h(x), z)}{|z|}$$
 >
 > *"This is a natural measure for tasks (such as speech or handwriting recognition) where the aim is to minimise the rate of transcription mistakes."*
 >
-> <span style="color:#777">↳ "normalised" = có chia `\|z\|`; 3 phép edit = 3 kiểu lỗi OCR thực tế: **delete** (chữ mờ/rụng), **substitute** (nhầm O↔0, N↔W), **insert** (nhiễu nền thành ký tự thừa).</span>
+> <span style="color:#777">⇒ "normalised" = có chia `\|z\|`; 3 phép edit = 3 kiểu lỗi OCR thực tế: **delete** (chữ mờ/rụng), **substitute** (nhầm O↔0, N↔W), **insert** (nhiễu nền thành ký tự thừa).</span>
 
 **🔢 Toy — test set $Z = 5$ captcha, chấm từng mẫu:**
 
@@ -1244,9 +1253,9 @@ $$LER(h, S') = \frac{1}{Z}\sum_{(x,z) \in S'} \frac{ED(h(x), z)}{|z|}$$
 
 $$LER = \frac{0 + 0.167 + 0.167 + 0.333 + 0.167}{5} \approx 16.7\%$$
 
-<span style="color:#777">↳ Chuẩn hóa theo `\|z\|`: sai 2 ký tự (mẫu 4) không bị phạt "gấp đôi tuyệt đối" — mỗi mẫu tự cân theo độ dài của nó.</span>
+<span style="color:#777">⇒ Chuẩn hóa theo `\|z\|`: sai 2 ký tự (mẫu 4) không bị phạt "gấp đôi tuyệt đối" — mỗi mẫu tự cân theo độ dài của nó.</span>
 
-<span style="color:#777">↳ **Phân biệt vai trò:** LER chỉ là thước đo **đánh giá** (test-time, rời rạc, không đạo hàm được); lúc **train** minimize **CTC loss** §4 (differentiable). Đừng nhầm eq(1) với hàm mất mát.</span>
+<span style="color:#777">⇒ **Phân biệt vai trò:** LER chỉ là thước đo **đánh giá** (test-time, rời rạc, không đạo hàm được); lúc **train** minimize **CTC loss** §4 (differentiable). Đừng nhầm eq(1) với hàm mất mát.</span>
 
 ⚠️ **Hai chỗ dễ nói sai khi giảng:**
 
