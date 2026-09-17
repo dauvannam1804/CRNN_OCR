@@ -1017,7 +1017,7 @@ maximize  Σ ln p(l|x)   ⇔   minimize  −Σ ln p(l|x)
                       → O = negative log-likelihood = chính là CTC loss
 ```
 
-  ⚠ **"thế thực tế có tính cả S không?" — KHÔNG.** O = −Σ trên S chỉ là **định nghĩa đích** — không ai nhét cả S vào 1 lần tính (chậm + hết RAM). Thực hành = **SGD**:
+⚠ **"thế thực tế có tính cả S không?" — KHÔNG.** O = −Σ trên S chỉ là **định nghĩa đích** — không ai nhét cả S vào 1 lần tính (chậm + hết RAM). Thực hành = **SGD**:
 
 ```
 mỗi step:  bốc 1 batch B ≪ S ngẫu nhiên     (DataLoader — train_custom.py:54)
@@ -1028,7 +1028,7 @@ kết quả:   các bước "đo gần" dao động nhẹ nhưng hội tụ về
            (Stochastic GD — "stochastic" = đo bằng mẫu ngẫu nhiên)
 ```
 
-  ⇒ 🔢 **chạy số để thấy "⇔":** 2 model thi nhau trên 2 sample (p(l|x) ở đây hiểu là `Σ_π p(π|x)` — mục dưới):
+⇒ 🔢 **chạy số để thấy "⇔":** 2 model thi nhau trên 2 sample (p(l|x) ở đây hiểu là `Σ_π p(π|x)` — mục dưới):
 
 ```
                      p(l₁|x₁)    p(l₂|x₂)    Σ ln p(l|x)        −Σ ln p(l|x)
@@ -1039,7 +1039,7 @@ kết quả:   các bước "đo gần" dao động nhẹ nhưng hội tụ về
   bầu ra CÙNG một model — hai cách nói, một hành động.
 ```
 
-  ⇒ vì thế paper nói *"same principle underlying the standard neural network objective functions"* (Bishop 1995) — cross-entropy cũng đi đúng 3 bước này, chỉ khác L ở mức sample → label.
+⇒ vì thế paper nói *"same principle underlying the standard neural network objective functions"* (Bishop 1995) — cross-entropy cũng đi đúng 3 bước này, chỉ khác L ở mức sample → label.
 
 - **Khác duy nhất với classification thường:** "class" giờ là **cả một labelling** — trừu tượng, hiện thân qua rất nhiều path → phải **marginalize (cộng) hết**, và việc cộng đó chính là lý do cần §4.1:
 
@@ -1086,11 +1086,10 @@ Nhưng $T = 26$, 38 classes → $38^{26} \approx 10^{41}$ path — **cộng mù 
 - **"We begin with an algorithm required for the maximum likelihood function"** — câu cầu nối sang §4.1: thuật toán đó là **forward–backward** (Rabiner 1989, mượn từ HMM) — tính được $p(l \mid x)$ trong $O(T \cdot |l|)$ thay vì liệt kê mọi path (mũ theo $T$: $38^{26} \approx 10^{41}$). Toàn bộ bullets dưới đây là lời giải chi tiết cho câu này.
 
 - **Bản đồ 2 tầng của §4:**
-
-- **Objective:** $-\ln p(l \mid x)$ ← nguyên lý ML (preamble — phần này)
-- **Cần $p(l \mid x)$** ⇒ **§4.1**: forward–backward trên lattice $l'$ (α, β, rescaling — bullets dưới)
-- **Cần $\partial(-\ln p)/\partial y^t$** ⇒ **§4.2**: $\alpha_t(s)\,\beta_t(s)$ → "y − posterior" (note 7️⃣)
-  - ⇒ cả hai chỉ là 2 đầu vào cho **BPTT** — pipeline train không đổi
+  - **Objective:** $-\ln p(l \mid x)$ ← nguyên lý ML (preamble — phần này)
+  - **Cần $p(l \mid x)$** ⇒ **§4.1**: forward–backward trên lattice $l'$ (α, β, rescaling — bullets dưới)
+  - **Cần $\partial(-\ln p)/\partial y^t$** ⇒ **§4.2**: $\alpha_t(s)\,\beta_t(s)$ → "y − posterior" (note 7️⃣)
+    - ⇒ cả hai chỉ là 2 đầu vào cho **BPTT** — pipeline train không đổi
 
 ⇒ Đối chiếu: B5 (dưới) có checklist chính đoạn này ("maximum likelihood + BPTT") — phần này là bản mở rộng của nó.
 
