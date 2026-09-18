@@ -1115,16 +1115,17 @@ Nhưng $T = 26$, 38 classes → $38^{26} \approx 10^{41}$ path — **cộng mù 
       ```
 
       ⇒ $p(\text{"a"}) = .20 + .10 + .08 = .38$ — cộng đúng **3 path**; công thức khớp: $\binom{T+u}{T-u} = \binom{3}{1} = 3$ ✓
-    - **vẫn `"a"`, tăng $T=26$:** mỗi alignment ↔ chọn cặp **(frame đầu $i$, frame cuối $j$)** của run `a`, $1 \le i \le j \le 26$, còn lại đổ blank ⇒
+    - **vẫn `"a"`, tăng $T=26$:** mỗi alignment ↔ duy nhất 1 cặp **(frame đầu $i$, frame cuối $j$)** của run `a`, $1 \le i \le j \le 26$ — ⚠️ **cả khoảng $i \to j$ là chữ `a`** (không phải chỉ 2 mốc!), trước $i$ và sau $j$ đổ blank; chốt $(i,j)$ xong path bị ép hết ⇒
       $\binom{27}{25} = \binom{27}{2} = \tfrac{26 \cdot 27}{2} = 351$ path
-      (run dài 1: 26 cách + dài 2: 25 cách + … + dài 26: 1 cách $= 351$ ✓)
+      (run dài 1: 26 cách + dài 2: 25 cách + … + dài 26: 1 cách $= 351$ ✓; 1 cặp $(i,j)$ ↔ 1 alignment — đếm cặp = đếm alignment)
     - **`"cat"`, $T=26$** — cỡ thực tế; 3 run `c`/`a`/`t` xen kẽ blank ⇒
       $\binom{29}{23} = \binom{29}{6} = \tfrac{29 \cdot 28 \cdot 27 \cdot 26 \cdot 25 \cdot 24}{720} = 475{,}020$ path
       ⇒ eq(3) tính ngây thơ: **nhân 26 số** cho từng path (eq(2)) rồi **cộng 475k lần** $\approx 12{,}3$ triệu phép nhân — **cho 1 mẫu, 1 bước train** (train thật: hàng nghìn mẫu × hàng trăm epoch).
 
 <details>
-<summary>🔢 <b>Vì sao số alignment = <code>C(T+u, T−u)</code>?</b> — <span style="color:#888">không có trong paper (Graves chỉ nói "very many") — đếm tổ hợp trực tiếp từ định nghĩa map <code>B</code></span> <i>👆 bấm để mở/đóng</i></summary>
+<summary>🔢 <b>Vì sao số alignment = <code>C(T+u, T−u)</code> với <code>u = |l|</code>?</b> — <span style="color:#888">không có trong paper (Graves chỉ nói "very many") — đếm tổ hợp trực tiếp từ định nghĩa map <code>B</code></span> <i>👆 bấm để mở/đóng</i></summary>
 
+- **Ký hiệu:** $u = |l|$ = **số ký tự của label** (`"a"` → $u{=}1$, `"ca"` → $u{=}2$, `"cat"` → $u{=}3$) ⇒ label có **$u$ run** (mỗi ký tự đúng 1 run) và **$u+1$ khe** rải blank.
 - **Phân rã 1 alignment:** các **run** ký tự (mỗi run ≥ 1 frame, đúng thứ tự $c_1 \to c_u$) + **blank rải tự do** (≥ 0) vào $u+1$ khe (đầu, giữa các run, cuối).
 - **Gọi $r$** = số frame không blank ($u \le r \le T$), đếm theo 2 bước:
     - chia $r$ frame thành $u$ run dương (composition): $\binom{r-1}{u-1}$ cách
