@@ -651,7 +651,7 @@ y = [T=26, B=1, 39]               ← y^t_k (softmax per-frame ở 2️⃣)
 > <span style="color:#777">⇒ "no a priori way of aligning them" = data chỉ có cặp (x, z), KHÔNG có cặp (time-step, label) → alignment không tồn tại trong data. Toàn bộ §3–§4 là câu trả lời cho "align kiểu gì khi không ai chỉ?".</span>
 
 ⇒ Mục tiêu §2: dùng `S` train `h` để classify dữ liệu mới, minimize error measure — thước đo đó là LER eq(1) ở §2.1 (đi sâu ở **B10**).
-⇒ Đây là lý do tồn tại của cả paper — câu trả lời "học thế nào" trải dài từ 2️⃣ đến 7️⃣.
+⇒ Đây là lý do tồn tại của cả paper — câu trả lời "học thế nào" trải dài từ 2️⃣ đến 8️⃣.
 
 <span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">2️⃣ §3.1 — Output per-frame: softmax có thêm unit blank</span>
 
@@ -1088,20 +1088,78 @@ Nhưng $T = 26$, 38 classes → $38^{26} \approx 10^{41}$ path — **cộng mù 
 - **Bản đồ 2 tầng của §4:**
   - **Objective:** $-\ln p(l \mid x)$ ← nguyên lý ML (preamble — phần này)
   - **Cần $p(l \mid x)$** ⇒ **§4.1**: forward–backward trên lattice $l'$ (α, β, rescaling — bullets dưới)
-  - **Cần $\partial(-\ln p)/\partial y^t$** ⇒ **§4.2**: $\alpha_t(s)\,\beta_t(s)$ → "y − posterior" (note 7️⃣)
+  - **Cần $\partial(-\ln p)/\partial y^t$** ⇒ **§4.2**: $\alpha_t(s)\,\beta_t(s)$ → "y − posterior" (note 8️⃣)
     - ⇒ cả hai chỉ là 2 đầu vào cho **BPTT** — pipeline train không đổi
 
 ⇒ Đối chiếu: B5 (dưới) có checklist chính đoạn này ("maximum likelihood + BPTT") — phần này là bản mở rộng của nó.
 
-<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">§4.1 — Training: forward–backward trên lattice `l′` (trái tim của paper)</span>
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">7️⃣ §4.1 — Training: forward–backward trên lattice `l′` (trái tim của paper)</span>
 
-- `l′`: chèn blank đầu/cuối/giữa, len `2|l|+1` ↔ `extended_targets` (`ctc_loss.py:273-279`)
-- Forward α eq(6)–(7): 3 transition stay/move/skip — skip chỉ khi `l′_s ≠ blank` và `l′_s ≠ l′_{s−2}` ↔ skip mask `ctc_loss.py:40-41`
-- eq(8): `p(l|x)` gom từ 2 ô cuối lattice ↔ `logaddexp` tại `ctc_loss.py:294`
-- Backward β eq(9)–(11) ↔ `_compute_beta_matrix` + **Fig 3**
-- **Rescaling `C_t`, `D_t`:** chống underflow ↔ log-domain + `logaddexp` trong code
+> 📜 <span style="background-color:#EDE7F6; color:#5E35B1; padding:2px 8px; border-radius:4px; font-weight:bold">PAPER · §4.1 (tr.4) — đoạn mở đầu: vì sao cần quy hoạch động</span>
+>
+> *"We require an efficient way of calculating the conditional probabilities p(l|x) of individual labellings. At first sight (3) suggests this will be problematic: the sum is over all paths corresponding to a given labelling, and in general there are very many of these. Fortunately the problem can be solved with a dynamic programming algorithm, similar to the forward-backward algorithm for HMMs (Rabiner, 1989). The key idea is that the sum over paths corresponding to a labelling can be broken down into an iterative sum over paths corresponding to prefixes of that labelling. The iterations can then be efficiently computed with recursive forward and backward variables."*
+>
+> <span style="color:#777">⇒ 5 câu = 5 nhịp: cần $p(l \mid x)$ → nhìn eq(3) thì *problematic* (rất nhiều path) → *fortunately*: DP giải được (giống forward-backward HMM) → **key idea**: bẻ sum-over-paths thành sum-over-prefixes → điền bảng bằng 2 biến quy nạp α (tới) / β (lùi). Toàn bộ §4.1 phía dưới chỉ là triển khai từng nhịp này. *"(3)" = eq(3) ở 4️⃣.*</span>
 
-<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">7️⃣ §4.2 — Gradient: `α·β` đếm path qua mỗi ô, error signal `y − posterior`</span>
+**Vì sao "in general there are very many of these"?**
+
+- **Đếm thử là biết:** path = chuỗi dài $T$ trên alphabet mở rộng ($|L|+1$ lựa chọn mỗi frame) ⇒ tổng số path (mọi labelling) $= (|L|+1)^T$ — **mũ theo $T$**: repo này $39^{26} \approx 10^{41}$ path cho 1 mẫu.
+- **Cắt hẹp cho 1 labelling cụ thể vẫn kinh khủng:** số alignment của $l$ ($u = |l|$) vào $T$ frame $= \binom{T+u}{T-u}$ (chuẩn cho label không có 2 ký tự giống liền nhau) — đếm tay từng cỡ:
+    - **$l=$`"a"`, $T=2$** — đúng toy vocab $\{a, b, -\}$ ở block trước; path ra `"a"` ⇔ chữ `a` lập thành **1 run liền**, phần còn lại blank:
+
+      ```
+      (a,a)   .5·.4 = .20  →  "a"   ✓
+      (a,-)   .5·.2 = .10  →  "a"   ✓
+      (-,a)   .2·.4 = .08  →  "a"   ✓
+      (6 path còn lại → "ab"/"ba"/"b"/""  ✗ không thuộc B⁻¹("a"))
+      ```
+
+      ⇒ $p(\text{"a"}) = .20 + .10 + .08 = .38$ — cộng đúng **3 path**; công thức khớp: $\binom{T+u}{T-u} = \binom{3}{1} = 3$ ✓
+    - **vẫn `"a"`, tăng $T=26$:** mỗi alignment ↔ chọn cặp **(frame đầu $i$, frame cuối $j$)** của run `a`, $1 \le i \le j \le 26$, còn lại đổ blank ⇒
+      $\binom{27}{25} = \binom{27}{2} = \tfrac{26 \cdot 27}{2} = 351$ path
+      (run dài 1: 26 cách + dài 2: 25 cách + … + dài 26: 1 cách $= 351$ ✓)
+    - **`"cat"`, $T=26$** — cỡ thực tế; 3 run `c`/`a`/`t` xen kẽ blank ⇒
+      $\binom{29}{23} = \binom{29}{6} = \tfrac{29 \cdot 28 \cdot 27 \cdot 26 \cdot 25 \cdot 24}{720} = 475{,}020$ path
+      ⇒ eq(3) tính ngây thơ: **nhân 26 số** cho từng path (eq(2)) rồi **cộng 475k lần** $\approx 12{,}3$ triệu phép nhân — **cho 1 mẫu, 1 bước train** (train thật: hàng nghìn mẫu × hàng trăm epoch).
+
+<details>
+<summary>🔢 <b>Vì sao số alignment = <code>C(T+u, T−u)</code>?</b> — <span style="color:#888">không có trong paper (Graves chỉ nói "very many") — đếm tổ hợp trực tiếp từ định nghĩa map <code>B</code></span> <i>👆 bấm để mở/đóng</i></summary>
+
+- **Phân rã 1 alignment:** các **run** ký tự (mỗi run ≥ 1 frame, đúng thứ tự $c_1 \to c_u$) + **blank rải tự do** (≥ 0) vào $u+1$ khe (đầu, giữa các run, cuối).
+- **Gọi $r$** = số frame không blank ($u \le r \le T$), đếm theo 2 bước:
+    - chia $r$ frame thành $u$ run dương (composition): $\binom{r-1}{u-1}$ cách
+    - rải $T-r$ blank vào $u+1$ khe (weak composition): $\binom{(T-r)+(u+1)-1}{(u+1)-1} = \binom{T-r+u}{u}$ cách
+- **Cộng theo $r$:** $\sum_{r=u}^{T} \binom{r-1}{u-1}\binom{T-r+u}{u} = \binom{T+u}{T-u}$ (đồng nhất thức Vandermonde)
+- **Kiểm chứng tay — `"ca"`, $T=3$** (⇒ $u=2$, công thức hứa $\binom{5}{1} = 5$):
+    - $r=2$: run (1,1) → $\binom{1}{1}=1$; blank $1$ vào $3$ khe → $\binom{3}{2}=3$ ⇒ 3 path: `ca−`, `−ca`, `c−a`
+    - $r=3$: run (2,1),(1,2) → $\binom{2}{1}=2$; blank $0$ → 1 cách ⇒ 2 path: `caa`, `cca`
+    - tổng $3+2 = 5$ ✓
+- ⚠️ **Đọc cho đúng cỡ tăng:** với $u$ cố định, $\binom{T+u}{T-u}$ là **đa thức bậc $2u$** theo $T$ (vd $u=1$: $\approx T^2/2$) — "mũ thật" nằm ở **tổng trên mọi labelling** $(|L|+1)^T$, và ở việc $u$ tăng theo chiều chuỗi thực tế. Cả hai đều "very many" so với lattice $O(T \cdot |l'|)$.
+
+</details>
+
+- ⚠️ **Đối chiếu với lattice:** `cat` → `-c-a-t-` ⇒ $|l'| = 2 \cdot 3 + 1 = 7$ ⇒
+  $T \times |l'| = 26 \times 7 = 182$ ô.
+  **475.020 path chui qua 182 ô** — chênh lệch này vừa là "vấn đề", vừa là "chìa khóa" (xem dưới).
+
+**Vì sao quy hoạch động giải được?**
+
+- **Cấu trúc con chồng lấn (overlapping subproblems):** 475k path khác nhau *cách đi*, nhưng chỉ có 182 *trạm trung gian* — cặp (thời điểm $t$, ô $s$). Mọi path đang đứng cùng 1 ô $(t,s)$ có **tương lai giống hệt nhau**: xác suất đoạn đi tiếp chỉ phụ thuộc $(t,s)$, không phụ thuộc đường đã đi (tính Markov trên lattice).
+- **Đại số của việc gộp — quy luật phân phối:** $p(\pi \mid x) = \underbrace{\textstyle\prod_{\tau \le t}}_{\text{prefix}} \cdot \underbrace{\textstyle\prod_{\tau > t}}_{\text{suffix}}$; các path qua chung $(t,s)$ có **cùng suffix** ⇒ $\sum_i \text{prefix}_i \cdot \text{suffix} = \big(\sum_i \text{prefix}_i\big) \cdot \text{suffix}$ — gộp prefix thành **một số**, nhân suffix **một lần**. Bớt mũ về đa thức xảy ra đúng ở dấu bằng này.
+- **Vì sao mượn được HMM (Rabiner 1989):** CTC lattice **isomorphic với HMM lattice** — cùng bài "sum mọi sequence ẩn qua lattice". Khác biệt duy nhất: HMM có transition/emission **học được**; CTC có lattice **cố định bởi $l'$**, "emission" là $y^t_{l'_s}$ đọc thẳng từ softmax.
+
+**Vì sao key idea — "iterative sum over prefixes" + "recursive forward and backward variables" — chạy được?**
+
+- **Prefix là một phép phân hoạch (partition):** tại mỗi thời điểm $t$, mọi path đứng ở **đúng 1 ô** $s$ ⇒ tập path bị cắt thành $|l'|$ nhóm rời nhau, không sót không trùng ⇒ sum-over-paths = sum-over-nodes.
+- **Biến tới (forward):** $\alpha_t(s)$ = tổng xác suất **mọi prefix** đang ở ô $s$ lúc $t$. Prefix dài $t+1$ sinh từ prefix dài $t$ bằng **3 nước đi** stay/move/skip ⇒ $\alpha_{t+1}(s) = y^{t+1}_{l'_s}\big(\alpha_t(s) + \alpha_t(s{-}1) + \alpha_t(s{-}2)\big)$ (skip có điều kiện — chi tiết eq(6)(7) dưới). Đây là chỗ **"iterative sum over prefixes"**: quy nạp cột $t+1$ từ cột $t$, mỗi ô ≤ 3 phép cộng + 1 nhân ⇒ $O(T \cdot |l'|)$ thay vì mũ.
+- **Biến lùi (backward):** $\beta_t(s)$ = tổng xác suất **mọi suffix** từ $(t,s)$ đi tới hết — cùng quy nạp, chạy ngược. Riêng tính $p(l|x)$ thì α là đủ (eq(8), gom 2 ô cuối); **β để làm gì?** — dành sẵn cho §4.2: xác suất mọi path **qua** ô $(t,s) = \alpha_t(s)\,\beta_t(s) / p(l|x)$ → đạo hàm. Paper đưa cả hai biến ngay từ đầu vì mục tiêu thật của §4 là **gradient**, không chỉ loss.
+- ⚠️ **Đọc đúng chữ:** *recursive* = công thức quy nạp trên $t$; *iterative* = cài đặt điền bảng cột theo cột — hai từ chỉ cùng một phép $\alpha_{t-1} \to \alpha_t$, không phải hai thuật toán.
+
+⇒ **Câu chốt cả đoạn:** rất nhiều **path** nhưng rất ít **ô** — quy hoạch động đổi "sum theo path" lấy "sum theo ô". Trong code: lattice từ `extended_targets` (`ctc_loss.py:273-279`), α/β điền bằng `logaddexp` (log-domain thay rescaling $C_t$ của paper), eq(8) gom 2 ô cuối tại `ctc_loss.py:294`.
+
+→ **Đọc tiếp:** đoạn sau định nghĩa `l′` (chèn blank) và eq(5)–(7) khởi tạo/quy nạp α — mình đối chiếu từng công thức.
+
+<span style="background-color:#FFE0B2; color:#E65100; padding:1px 8px; border-radius:4px; border:1px solid #FFB74D; font-weight:bold">8️⃣ §4.2 — Gradient: `α·β` đếm path qua mỗi ô, error signal `y − posterior`</span>
 
 `α_t(s)β_t(s)` = xác suất mọi path qua symbol s tại t; eq(15)–(16) → `∂O/∂u^t_k = y^t_k − posterior` ↔ `backward()` `ctc_loss.py:314`.
 ⇒ **Fig 4**: error dạng spike, tự triệt tiêu khi hội tụ — hệ quả trực tiếp của eq(16).
